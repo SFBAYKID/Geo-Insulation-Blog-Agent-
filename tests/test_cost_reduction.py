@@ -2,12 +2,12 @@ import json
 from unittest.mock import Mock
 
 import pytest
-from anthropic.types import Message
 
-from geo_blog.claude_usage import usage_receipt
 from geo_blog.content import Writer
 from geo_blog.edits import apply_edits
 from geo_blog.evidence import catalog_packet, selected_packet, source_context
+from geo_blog.model_response import Message
+from geo_blog.model_usage import usage_receipt
 from geo_blog.settings import Settings
 
 
@@ -16,7 +16,7 @@ def message(text="Evidence", usage=None):
         id="msg-test",
         type="message",
         role="assistant",
-        model="claude-sonnet-4-6",
+        model="gpt-6-luna",
         content=[{"type": "text", "text": text}],
         stop_reason="end_turn",
         usage=usage or {"input_tokens": 1, "output_tokens": 1},
@@ -69,7 +69,7 @@ def test_editor_prefix_is_identical_before_and_after_visual_metadata():
             topic,
             hero={"src": "hero.webp"},
             exercise={"section": "Try"},
-            claude_cost_estimate={"cost": 1},
+            model_cost_estimate={"cost": 1},
         ),
         company,
         "Research",
@@ -120,7 +120,7 @@ def test_ambiguous_or_malformed_edits_fail_closed(original, edits):
 def test_call_allowance_survives_restart_and_counts_timeout(tmp_path):
     settings = Settings(_env_file=None, storage_dir=tmp_path)
     client = Mock()
-    client.messages.stream.side_effect = TimeoutError("unknown provider outcome")
+    client.messages.create.side_effect = TimeoutError("unknown provider outcome")
     writer = Writer(settings, client)
     writer.bind_run(tmp_path / "run", max_calls=1)
     with pytest.raises(TimeoutError):
@@ -129,26 +129,22 @@ def test_call_allowance_survives_restart_and_counts_timeout(tmp_path):
     restarted.bind_run(tmp_path / "run", max_calls=1)
     with pytest.raises(RuntimeError, match="allowance exhausted"):
         restarted.call("System", "Test")
-    client.messages.stream.assert_called_once()
+    client.messages.create.assert_called_once()
 
 
-def test_unclassified_search_cache_writes_are_not_omitted_from_cost():
+def test_usage_counts_cached_input_once_and_includes_search_cost():
     response = message(
         usage={
-            "input_tokens": 10,
+            "input_tokens": 5000,
             "output_tokens": 10,
-            "cache_creation_input_tokens": 5000,
-            "cache_creation": {
-                "ephemeral_1h_input_tokens": 1000,
-                "ephemeral_5m_input_tokens": 1000,
-            },
+            "cache_read_input_tokens": 4000,
+            "web_search_requests": 2,
         }
     )
-    receipt = usage_receipt(response, {"model": "claude-sonnet-4-6"})
-    assert receipt["unclassified_cache_creation_input_tokens"] == 3000
+    receipt = usage_receipt(response, {"model": "gpt-6-luna"})
     assert receipt["cost_is_upper_estimate"]
     assert receipt["estimated_cost_usd"] == pytest.approx(
-        (10 * 3 + 4000 * 6 + 1000 * 3.75 + 10 * 15) / 1e6
+        (1000 * 0.125 + 4000 * 0.01 + 10 * 0.5) / 1e6 + 0.02
     )
 
 
@@ -255,5 +251,5 @@ def test_oversized_prompt_is_rejected_before_network_or_allowance_use(tmp_path):
     writer.bind_run(tmp_path)
     with pytest.raises(ValueError, match="context limit"):
         writer.call("System", "x" * 120001)
-    client.messages.stream.assert_not_called()
-    assert not (tmp_path / "claude-call-budget.json").exists()
+    client.messages.create.assert_not_called()
+    assert not (tmp_path / "model-call-budget.json").exists()

@@ -114,7 +114,7 @@ def test_revision_write_response_cannot_promise_a_rebuild(tmp_path):
         "input": call.input,
     }
     model = Mock()
-    model.messages.create.return_value = SimpleNamespace(content=[call])
+    model.messages.create.return_value = SimpleNamespace(content=[call], stop_reason="tool_use")
     reply = answer(s, st, st.get("draft"), "Shorten the opening", [], "event", "owner", model=model)
     assert "article has not changed" in reply and "no rebuild has been scheduled" in reply
     assert model.messages.create.call_count == 1

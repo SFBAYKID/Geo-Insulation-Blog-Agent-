@@ -172,7 +172,7 @@ def share(settings: Settings, store: Store, draft_id: str) -> dict[str, Any]:
             private_alert(
                 settings,
                 f"The blog is going to the client, but the Basecamp comment for the reviewer failed "
-                f"({type(exc).__name__}: {str(exc)[:200]}). Ask Claude Code to fix it.",
+                f"({type(exc).__name__}: {str(exc)[:200]}). Ask the blog agent to fix it.",
             )
     archive_previous(settings)
     receipt_path.write_text(json.dumps({"state": "sending", "preview_commit": commit}))
@@ -236,7 +236,7 @@ def notify_failure(settings: Settings, exc: BaseException) -> None:
         settings,
         "This week's blog did not go out. Nothing was posted in the client's channel.\n"
         f"Reason: {detail}\n"
-        "Ask Claude Code to fix it and rerun this week's blog.",
+        "Ask the blog agent to fix it and rerun this week's blog.",
     )
 
 

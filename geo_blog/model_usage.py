@@ -1,4 +1,4 @@
-"""Explicit one-hour cache boundaries and prompt-free Claude usage receipts."""
+"""Prompt-free OpenAI token receipts and conservative workflow estimates."""
 
 from __future__ import annotations
 
@@ -13,24 +13,19 @@ import json
 import os
 from datetime import datetime, timezone
 
-CACHE = {"type": "ephemeral", "ttl": "1h"}
-# Anthropic direct API, global inference; verified September 17, 2026.
+# Standard short-context pricing, verified October 4, 2026.
+# https://developers.openai.com/api/docs/pricing
 RATES = {
-    "claude-haiku-4-5-20251001": {"input": 1, "write_1h": 2, "read": 0.10, "output": 5},
-    "claude-sonnet-4-6": {"input": 3, "write_1h": 6, "read": 0.30, "output": 15},
-    # Owner switched the writer to Sonnet 5 on September 28, 2026 (Haiku missed exact keywords).
-    "claude-sonnet-5": {"input": 2, "write_1h": 4, "read": 0.20, "output": 10},
+    "gpt-6-luna": {"input": 0.10, "write": 0.125, "read": 0.01, "output": 0.50},
+    "gpt-6.1-sol": {"input": 2.00, "write": 2.50, "read": 0.10, "output": 10.00},
 }
-# Sonnet 5 thinks by default and those tokens count against max_tokens, which would
-# truncate full articles; every call keeps thinking off, matching the Haiku behavior.
-NO_THINKING = {"type": "disabled"}
 
 
 def cached_text(text: str) -> Any:
-    """Attach the configured cache boundary to nonempty stable text."""
+    """Keep stable text prefixes; OpenAI controls automatic caching."""
     if not isinstance(text, str) or not text.strip():
-        raise ValueError("A cache block must contain nonempty text")
-    return {"type": "text", "text": text, "cache_control": dict(CACHE)}
+        raise ValueError("A text block must contain nonempty text")
+    return {"type": "text", "text": text}
 
 
 def fingerprint(value: Any) -> str:
@@ -41,63 +36,43 @@ def fingerprint(value: Any) -> str:
 
 
 def stable_tools(tools: Any) -> Any:
-    """Copy tool definitions and place one stable cache boundary at their end."""
-    result = copy.deepcopy(tools)
-    if result:
-        result[-1]["cache_control"] = dict(CACHE)
-    return result
+    """Copy tool definitions so feedback cannot mutate future requests."""
+    return copy.deepcopy(tools)
 
 
 def usage_receipt(response: Any, params: dict[str, Any], *, batch: bool = False) -> Any:
-    """Calculate a prompt-free usage receipt from actual provider token counters."""
+    """Record actual counters and conservative cost without prompts or secrets."""
     usage = getattr(response, "usage", None)
     if not usage or not isinstance(getattr(usage, "input_tokens", None), int):
-        return None  # Synthetic unit-test responses may omit usage.
+        return None
     values = usage.model_dump(mode="json")
-    model = params["model"]
-    rate = RATES.get(model)
-    creation = values.get("cache_creation") or {}
-    written = values.get("cache_creation_input_tokens") or 0
-    read = values.get("cache_read_input_tokens") or 0
-    searches = (values.get("server_tool_use") or {}).get("web_search_requests", 0) or 0
+    rate = RATES.get(params["model"])
+    read = values.get("cache_read_input_tokens", 0)
+    searches = values.get("web_search_requests", 0)
     cost = None
-    unknown = max(
-        0,
-        written
-        - sum(
-            creation.get(k, 0) or 0
-            for k in ("ephemeral_5m_input_tokens", "ephemeral_1h_input_tokens")
-        ),
-    )
-    if rate:
-        # Unclassified provider search cache writes are priced conservatively at 1h.
-        # Do not silently omit them or claim this estimate is an invoice.
-        five = creation.get("ephemeral_5m_input_tokens", 0) or 0
-        hourly = (creation.get("ephemeral_1h_input_tokens", 0) or 0) + unknown
+    if rate and values["input_tokens"] <= 120000:
+        # Responses usage may omit separately classified cache writes. Price all
+        # noncached tokens at the higher write rate instead of understating cost.
         tokens = (
-            values["input_tokens"] * rate["input"]
-            + hourly * rate["write_1h"]
-            + five * rate["input"] * 1.25
+            max(0, values["input_tokens"] - read) * rate["write"]
             + read * rate["read"]
             + values["output_tokens"] * rate["output"]
-        ) / 1_000_000
+        ) / 1e6
         cost = round(tokens * (0.5 if batch else 1) + searches * 0.01, 8)
     return {
         "at": datetime.now(timezone.utc).isoformat(),
         "response_id": response.id,
-        "model": model,
+        "provider": "openai",
+        "model": params["model"],
         "batch": batch,
-        "cache_ttl": "1h",
         "tools_sha256": fingerprint(params.get("tools", [])),
         "input_tokens": values["input_tokens"],
         "output_tokens": values["output_tokens"],
-        "cache_creation_input_tokens": written,
         "cache_read_input_tokens": read,
-        "cache_creation": creation,
-        "unclassified_cache_creation_input_tokens": unknown,
-        "cost_is_upper_estimate": bool(unknown),
+        "cost_is_upper_estimate": True,
         "web_search_requests": searches,
         "estimated_cost_usd": cost,
+        "assumptions": "Standard short-context pricing; noncached input priced at cache-write rate. Output includes reasoning. Images excluded.",
     }
 
 
@@ -119,7 +94,7 @@ def record_usage(
             receipt["stage"] = stage
         settings.storage_dir.mkdir(parents=True, exist_ok=True)
         fd = os.open(
-            settings.storage_dir / "claude-usage.jsonl",
+            settings.storage_dir / "model-usage.jsonl",
             os.O_CREAT | os.O_APPEND | os.O_WRONLY,
             0o600,
         )
@@ -134,7 +109,7 @@ def cold_estimate(params: dict[str, Any], *, calls: int = 1, batch: bool = False
     """Conservative planning estimate, not a guaranteed provider invoice cap.
 
     UTF-8 bytes overestimate ordinary English input tokens. Assume every input
-    token incurs a 1h cache write and every output reaches max_tokens. Never
+    token incurs a cache write and every output reaches max_tokens. Never
     promise cache savings before usage proves them.
     """
     rate = RATES.get(params["model"])
@@ -149,7 +124,7 @@ def cold_estimate(params: dict[str, Any], *, calls: int = 1, batch: bool = False
         )
         + 2000
     )
-    cost = (size * rate["write_1h"] + params["max_tokens"] * rate["output"]) / 1_000_000
+    cost = (size * rate["write"] + params["max_tokens"] * rate["output"]) / 1_000_000
     searches = sum(
         t.get("max_uses", 0) for t in params.get("tools", []) if t.get("name") == "web_search"
     )
@@ -159,7 +134,7 @@ def cold_estimate(params: dict[str, Any], *, calls: int = 1, batch: bool = False
         "calls": calls,
         "planning_estimate_usd": round(calls * (cost * (0.5 if batch else 1) + searches * 0.01), 4),
         "batch": batch,
-        "assumptions": "UTF-8 byte estimate plus tool overhead; cold 1h writes; maximum output; no cache-hit savings assumed. Search-result tokens may add cost.",
+        "assumptions": "UTF-8 byte estimate plus tool overhead; cold cache writes; maximum output; no cache-hit savings assumed. Search-result tokens may add cost.",
     }
 
 
@@ -174,7 +149,7 @@ def workflow_estimate(
 
     Future model output and search packets cannot be counted in advance. Use a
     16k input-token planning allowance per call, increased for known large input.
-    Budget cold hourly cache writes and full output limits; hits lower the cost.
+    Budget cold cache writes and full output limits; hits lower the cost.
     """
     rate = RATES.get(model)
     if not rate:
@@ -191,7 +166,7 @@ def workflow_estimate(
 
     def price(calls: int, output: int) -> Any:
         """Estimate cold-cache token charges using the stated planning assumptions."""
-        return round((calls * n * rate["write_1h"] + output * rate["output"]) / 1e6 + search, 2)
+        return round((calls * n * rate["write"] + output * rate["output"]) / 1e6 + search, 2)
 
     return {
         "model": model,
@@ -201,15 +176,15 @@ def workflow_estimate(
         "all_retries_estimate_usd": price(retry_calls, retry_output),
         "input_tokens_per_call_assumption": n,
         "cache_savings_assumed": False,
-        "includes": "Claude tokens and up to twelve research searches; excludes image generation and hosting",
-        "assumptions": "Cold 1h writes and maximum outputs. Input size is an allowance, not a cap; actual cost varies with evidence size and retries.",
+        "includes": "OpenAI text tokens and up to twelve research searches; excludes image generation and hosting",
+        "assumptions": "Cold cache writes and maximum outputs. Input size is an allowance, not a cap; actual cost varies with evidence size and retries.",
     }
 
 
 def workflow_estimate_text(quote: dict[str, Any]) -> str:
     """Explain approximate first-pass and retry costs without promising an invoice cap."""
     return (
-        f"Estimated Claude cost: about ${quote['first_pass_estimate_usd']:.2f} for the first pass "
+        f"Estimated OpenAI text cost: about ${quote['first_pass_estimate_usd']:.2f} for the first pass "
         f"({quote['first_pass_calls']} calls), or about ${quote['all_retries_estimate_usd']:.2f} if all "
         f"{quote['all_retries_calls']} allowed calls are needed. "
         f"Assumes {quote['input_tokens_per_call_assumption']:,} input tokens per call and full outputs; "

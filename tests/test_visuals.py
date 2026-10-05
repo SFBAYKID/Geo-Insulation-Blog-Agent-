@@ -85,9 +85,8 @@ def test_recent_visuals_ignores_current_article(tmp_path):
 def test_visual_retry_passes_findings_to_planner_and_keeps_existing_prose(tmp_path, monkeypatch):
     from unittest.mock import Mock
 
-    from anthropic.types import Message
-
     from geo_blog import visuals
+    from geo_blog.model_response import Message
 
     (tmp_path / "company.json").write_text("[]")
     raw = Message(
@@ -126,9 +125,8 @@ def test_visual_retry_keeps_earlier_corrections(tmp_path, monkeypatch):
     the latest correction (a length) was passed along."""
     from unittest.mock import Mock
 
-    from anthropic.types import Message
-
     from geo_blog import visuals
+    from geo_blog.model_response import Message
 
     (tmp_path / "company.json").write_text("[]")
     raw = Message(

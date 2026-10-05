@@ -163,7 +163,7 @@ def apply_visual_plan(
     )
     if not report.passed:
         raise VisualReviewError("Reader experiment did not pass content validation")
-    from anthropic.types import Message
+    from geo_blog.model_response import Message
 
     # Use the same research brief as prose review, not a raw provider/tool transcript.
     evidence = response_text(Message.model_validate_json((folder / "research.json").read_text()))

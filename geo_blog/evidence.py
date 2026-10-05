@@ -59,7 +59,7 @@ def source_context(
     brief = {
         k: v
         for k, v in topic.items()
-        if k not in {"claude_cost_estimate", "hero", "exercise", "diagram", "review_lab"}
+        if k not in {"model_cost_estimate", "hero", "exercise", "diagram", "review_lab"}
     }
     return json.dumps(
         {

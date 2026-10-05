@@ -1,6 +1,6 @@
 """Two-call cache diagnostic using saved evidence; never changes a draft or Slack.
 
-Default estimates only. --count uses the token-count endpoint (no generation).
+Default estimates only.
 After showing the estimate, --run performs exactly two requests, without retries.
 """
 
@@ -18,11 +18,10 @@ import json
 import sys
 
 sys.path.insert(0, str(Path.cwd()))
-from anthropic import Anthropic
-from anthropic.types import Message
-
-from geo_blog.claude_usage import RATES, cold_estimate, fingerprint, usage_receipt
 from geo_blog.content import PROMPTS, Writer, response_text
+from geo_blog.model_response import Message
+from geo_blog.model_usage import cold_estimate, fingerprint, usage_receipt
+from geo_blog.openai_client import make_client
 from geo_blog.settings import Settings
 from geo_blog.store import Store
 
@@ -31,7 +30,6 @@ def main() -> None:
     """Parse explicit command options and run the requested operation."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("draft_id")
-    parser.add_argument("--count", action="store_true")
     parser.add_argument("--run", action="store_true")
     parser.add_argument("--expected-request-sha")
     args = parser.parse_args()
@@ -55,7 +53,7 @@ def main() -> None:
         (PROMPTS / "writer.md").read_text()
         + "\nFor this transport diagnostic only, do not write or change an article. Respond with ACK."
     )
-    client = Anthropic(api_key=s.anthropic_api_key.get_secret_value(), max_retries=0, timeout=120)
+    client = make_client(s, timeout=120)
     writer = Writer(s, client=client)
     parts = [source, draft["markdown"]]
     requests = [
@@ -77,26 +75,7 @@ def main() -> None:
         maximum_generation_calls=2,
         maximum_output_tokens_per_call=16,
     )
-    if args.count:
-        # The count endpoint rejects server tools. Count actual text, then add
-        # a conservative allowance; actual generation keeps the fixed tool list.
-        count = client.messages.count_tokens(
-            **{k: v for k, v in requests[0].items() if k in {"model", "system", "messages"}}
-        )
-        tool_allowance = len(json.dumps(requests[0]["tools"]).encode()) + 1000
-        rate = RATES[s.writer_model]
-        n = count.input_tokens + tool_allowance
-        quote.update(
-            counted_text_input_tokens=count.input_tokens,
-            tool_allowance_tokens=tool_allowance,
-            estimated_usd_with_second_call_cache_hit=round(
-                (n * (rate["write_1h"] + rate["read"]) + 32 * rate["output"]) / 1e6, 5
-            ),
-            estimated_usd_if_both_calls_write_cache=round(
-                (n * 2 * rate["write_1h"] + 32 * rate["output"]) / 1e6, 5
-            ),
-        )
-    output = s.storage_dir / "claude-cache-check"
+    output = s.storage_dir / "model-cache-check"
     output.mkdir(parents=True, exist_ok=True)
     saved = output / "estimate.json"
     if args.run and saved.exists():
@@ -130,10 +109,6 @@ def main() -> None:
         "No cache read observed; do not claim caching works"
     )
     assert receipts[0]["tools_sha256"] == receipts[1]["tools_sha256"]
-    assert (
-        receipts[0]["cache_creation"].get("ephemeral_1h_input_tokens", 0) > 0
-        or receipts[0]["cache_read_input_tokens"] > 0
-    )
     print("Verified actual cache read and identical tools; article and Slack unchanged.")
 
 

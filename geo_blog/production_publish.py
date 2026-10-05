@@ -162,7 +162,7 @@ def record_basecamp(settings: Settings, draft: dict[str, Any], url: str) -> None
         private_alert(
             settings,
             f"The blog is live at {url}, but updating its Basecamp task failed "
-            f"({type(exc).__name__}). Ask Claude Code to fix it.",
+            f"({type(exc).__name__}). Ask the blog agent to fix it.",
         )
     with locked_review(settings) as (path, review):
         review["basecamp_state"] = state

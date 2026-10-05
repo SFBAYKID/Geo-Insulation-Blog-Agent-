@@ -2,6 +2,8 @@
 
 Updated October 4, 2026. Setup incomplete; no runtime is deployed.
 
+Current provider decision: OpenAI only for writing, editing, chat and imagery. Earlier Claude/Anthropic credential requirements below are superseded. Dedicated Slack app is installed and verified; full test and deployment remain pending.
+
 ## Confirmed by Chase
 
 - Website: https://geo-insulation.com/.
@@ -77,3 +79,15 @@ Remaining: Geo Slack app/credentials and reviewer verification; separate Basecam
 ## Slack and repository milestone
 
 Baseline commit 9159ab1 pushed to the supplied agent repository main branch. No secrets or private setup evidence included. After Chase confirmed app access, created/installed dedicated Slack app A0C6QMK0PT3 in workspace T01DFJLFKE3, bot U0C7H50485N. auth.test passed and temporary Socket Mode WebSocket connected, then closed. Invited the new bot only to test channel C0B02721MNK. Verified Chase U01DPJVURHU as initial test reviewer. Private local credentials are now saved; source-supplied Basecamp credentials remain untouched. No local listener remains running. Slack icon and full draft test remain pending.
+
+## OpenAI credential verified
+
+Chase supplied the OpenAI key in the separate Geo blog folder under OPEN_AI_KEY. Copied only that newly supplied key into this workspace's ignored, mode-0600 .env.local as OPENAI_API_KEY; source file and Basecamp credentials left unchanged. Read-only OpenAI model discovery returned HTTP 200 and listed the configured gpt-image-2.5-flare-2026-09-08 model. No paid generation was performed; image generation and billing remain untested. Claude writing/editing key is still missing.
+
+## OpenAI-only provider migration
+
+Chase explicitly declined Anthropic and selected OpenAI for the entire model workflow. Replaced the Anthropic transport and dependency with OpenAI Responses requests, neutral saved response types and OpenAI usage estimates. Default text model: gpt-6-luna; existing OpenAI illustration model retained. Removed Anthropic requirements from doctor, CLI, nightly preflight and the local credential form. Updated offline audit batches and cache diagnostics. Stable prompts, domain-filtered source evidence, strict editor JSON, refusal/truncation gates, persistent spending reservations and test-only Slack boundaries remain enforced. Fixed inherited non-insulation wording in the research prompt.
+
+Live provider verification passed five bounded calls: short homeowner prose, strict editor approval JSON, official-domain research citations, a read-only tool call and its reply. No Slack messages, images, Basecamp writes, publication or deployment occurred. Prompt-free private usage receipts saved in ignored storage. This verifies transport and access, not full article quality or the end-to-end publishing workflow.
+
+Verification after migration: 315 offline tests passed; Ruff lint/format, mypy and source limits passed. Five live text-provider checks passed, with a conservative usage estimate of $0.011211 total. Doctor now requires only OpenAI for models and correctly remains incomplete for separate Basecamp runtime authorization, queue selection and Astro website integration.

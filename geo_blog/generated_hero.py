@@ -2,7 +2,7 @@
 
 Owner rule (September 28, 2026): a blog never goes out without an image. Real,
 privacy-cleared project photos always come first (``media_catalog.attach_media``). Only
-when none matches does this module ask Claude for an image brief, grounded in the
+when none matches does this module ask OpenAI for an image brief, grounded in the
 article and in factual descriptions of related real project photos, then generate the
 image with OpenAI. The caption always begins "Illustration:" so the picture is never
 presented as a customer installation.

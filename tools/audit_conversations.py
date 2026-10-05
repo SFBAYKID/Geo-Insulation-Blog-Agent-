@@ -1,6 +1,6 @@
-"""Synthetic conversation audit through Claude Message Batches only.
+"""Synthetic conversation audit through OpenAI Responses batches only.
 
-Default: prepare requests and print a cost estimate without calling Claude.
+Default: prepare requests and print a cost estimate without calling OpenAI.
 --submit --max-estimated-usd N submits one round after reviewing the estimate.
 --collect downloads results; rerun the default command to plan the next round.
 Up to four depenair leak rounds. Results require human review, not automatic grading.
@@ -22,11 +22,10 @@ import tempfile
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path.cwd()))
-from anthropic import Anthropic
-from anthropic.types import Message
-
 from geo_blog import batch
 from geo_blog.conversation import conversation_turns, initialize
+from geo_blog.model_response import Message
+from geo_blog.openai_client import make_client
 from geo_blog.settings import Settings
 from geo_blog.store import Store
 
@@ -172,7 +171,7 @@ def main(argv: Any = None) -> None:
     if options.collect:
         if not prior:
             raise ValueError("No batch has been submitted")
-        client = Anthropic(api_key=settings.anthropic_api_key.get_secret_value(), max_retries=0)
+        client = make_client(settings)
         results = batch.collect(client, settings, prior[-1].parent)
         print(
             "Batch still processing; no new requests submitted."
@@ -234,7 +233,7 @@ def main(argv: Any = None) -> None:
     if options.max_estimated_usd is None:
         raise ValueError("Review the estimate and supply --max-estimated-usd for the whole audit")
     remaining = options.max_estimated_usd - spent_estimate
-    client = Anthropic(api_key=settings.anthropic_api_key.get_secret_value(), max_retries=0)
+    client = make_client(settings)
     state = batch.submit(client, requests, root / f"round-{len(prior) + 1}", remaining)
     print(json.dumps({"batch_id": state["batch_id"], "state": state["state"]}))
 

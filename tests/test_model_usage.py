@@ -2,11 +2,11 @@ import json
 from unittest.mock import Mock
 
 import pytest
-from anthropic.types import Message
 
 from geo_blog import batch
-from geo_blog.claude_usage import CACHE, cold_estimate, record_usage
 from geo_blog.content import Writer
+from geo_blog.model_response import Message
+from geo_blog.model_usage import cold_estimate, record_usage
 from geo_blog.settings import Settings
 
 
@@ -15,13 +15,12 @@ def response():
         id="msg-test",
         type="message",
         role="assistant",
-        model="claude-sonnet-4-6",
+        model="gpt-6-luna",
         content=[{"type": "text", "text": "Done"}],
         stop_reason="end_turn",
         usage={
-            "input_tokens": 100,
+            "input_tokens": 4100,
             "output_tokens": 20,
-            "cache_creation_input_tokens": 0,
             "cache_read_input_tokens": 4000,
         },
     )
@@ -39,9 +38,9 @@ def test_writer_keeps_prefix_and_tools_stable_when_feedback_changes(tmp_path):
         "Different correction",
         cache_parts=["Source packet", "Saved article"],
     )
-    assert a["system"] == b["system"] and a["system"][0]["cache_control"] == CACHE
+    assert a["system"] == b["system"]
     assert a["messages"][0]["content"][:2] == b["messages"][0]["content"][:2]
-    assert all(block["cache_control"] == CACHE for block in a["messages"][0]["content"][:2])
+    assert all("cache_control" not in block for block in a["messages"][0]["content"][:2])
     assert "cache_control" not in b["messages"][0]["content"][-1]
     research = writer.request("Research", "Search", research=True)
     assert research["tools"] == writer.request("Other research", "Search", research=True)["tools"]
@@ -75,11 +74,11 @@ def test_usage_receipt_retains_real_cache_counters_without_prompts(tmp_path):
     }
     receipt = record_usage(s, response(), params)
     assert receipt["cache_read_input_tokens"] == 4000
-    assert receipt["estimated_cost_usd"] == pytest.approx(0.0006)
-    text = (tmp_path / "claude-usage.jsonl").read_text()
+    assert receipt["estimated_cost_usd"] == pytest.approx(0.0000625)
+    text = (tmp_path / "model-usage.jsonl").read_text()
     assert "private source" not in text
     assert record_usage(s, response(), params, batch=True)["estimated_cost_usd"] == pytest.approx(
-        0.0003
+        0.00003125
     )
 
 
@@ -87,7 +86,7 @@ def test_batch_budget_duplicate_and_ambiguous_submission(tmp_path):
     requests = [
         {
             "custom_id": "one",
-            "params": {"model": "claude-sonnet-4-6", "max_tokens": 20, "messages": []},
+            "params": {"model": "gpt-6-luna", "max_tokens": 20, "messages": []},
         }
     ]
     client = Mock()
@@ -108,7 +107,7 @@ def test_batch_budget_duplicate_and_ambiguous_submission(tmp_path):
 
 
 def test_batch_collection_preserves_failures_and_never_resends(tmp_path):
-    from anthropic.types.messages import MessageBatchIndividualResponse
+    from geo_blog.model_response import MessageBatchIndividualResponse
 
     s = Settings(_env_file=None, storage_dir=tmp_path)
     client = Mock()
@@ -159,8 +158,8 @@ def test_conversation_tool_results_are_cached_with_unchanged_tool_list(tmp_path)
     )
     second = turns.send(call)
     assert first["tools"] == second["tools"]
-    assert second["cache_control"] == CACHE
-    assert second["system"][0]["cache_control"] == CACHE
+    assert "cache_control" not in second
+    assert "cache_control" not in second["system"][0]
     assert "Saved article" in second["messages"][-1]["content"][0]["content"]
 
 
@@ -171,23 +170,23 @@ def test_offline_audit_uses_same_turns_without_sync_api(tmp_path):
     s = Settings(_env_file=None, storage_dir=tmp_path)
     case = {"id": "B01", "message": "Cool"}
     request, result = replay(case, [], s)
-    assert result is None and request["cache_control"] == CACHE
+    assert result is None and "cache_control" not in request
     request, result = replay(case, [response().model_dump(mode="json")], s)
     assert request is None and result["status"] == "response_recorded"
 
 
 def test_workflow_estimate_discloses_retries_and_does_not_assume_hits():
-    from geo_blog.claude_usage import workflow_estimate, workflow_estimate_text
+    from geo_blog.model_usage import workflow_estimate, workflow_estimate_text
     from geo_blog.slack_app import topic_message
 
-    nightly = workflow_estimate("claude-sonnet-4-6")
+    nightly = workflow_estimate("gpt-6-luna")
     assert nightly["first_pass_calls"] == 6 and nightly["all_retries_calls"] == 30
     assert nightly["first_pass_estimate_usd"] < nightly["all_retries_estimate_usd"]
     assert not nightly["cache_savings_assumed"]
-    text = topic_message({"claude_cost_estimate": nightly})
+    text = topic_message({"model_cost_estimate": nightly})
     assert workflow_estimate_text(nightly) not in text
     assert "Artwork is separate" in workflow_estimate_text(nightly)
-    assert workflow_estimate("claude-sonnet-4-6", revision=True)["all_retries_calls"] == 6
-    assert workflow_estimate("claude-sonnet-4-6", include_visuals=False)["all_retries_calls"] == 30
+    assert workflow_estimate("gpt-6-luna", revision=True)["all_retries_calls"] == 6
+    assert workflow_estimate("gpt-6-luna", include_visuals=False)["all_retries_calls"] == 30
     with pytest.raises(ValueError, match="pricing"):
         workflow_estimate("unknown-model")

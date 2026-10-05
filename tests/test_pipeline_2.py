@@ -141,7 +141,7 @@ def test_exhausted_queue_notifies_slack_once_without_generating(tmp_path, monkey
 
     s = Settings(
         _env_file=None,
-        anthropic_api_key="test",
+        openai_api_key="test",
         slack_bot_token="test",
         slack_approver_ids="owner",
     )
@@ -195,7 +195,7 @@ def test_queue_connection_error_never_claims_keywords_exhausted(tmp_path, monkey
 
     settings = Settings(
         _env_file=None,
-        anthropic_api_key="test",
+        openai_api_key="test",
         slack_bot_token="test",
         slack_approver_ids="owner",
     )
@@ -297,14 +297,14 @@ def test_approved_prose_checkpoint_skips_generation_but_checks_integrity(tmp_pat
 
 
 def research_message(stop_reason, text):
-    from anthropic.types import Message
+    from geo_blog.model_response import Message
 
     return Message.model_validate(
         {
             "id": "msg_research",
             "type": "message",
             "role": "assistant",
-            "model": "claude-sonnet-4-6",
+            "model": "gpt-6-luna",
             "content": [{"type": "text", "text": text}],
             "stop_reason": stop_reason,
             "usage": {"input_tokens": 10, "output_tokens": 10},

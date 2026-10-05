@@ -14,7 +14,7 @@ def setup(tmp_path, monkeypatch):
         _env_file=None,
         website_base_commit="test-base-commit",
         storage_dir=tmp_path,
-        anthropic_api_key="test",
+        openai_api_key="test",
         airtable_token="test",
         slack_bot_token="test",
         slack_approver_ids="owner",

@@ -15,21 +15,16 @@ class Settings(BaseSettings):
     )
     openai_api_key: SecretStr = Field(
         default=SecretStr(""),
-        validation_alias=AliasChoices("OPENAI_API_KEY", "OPEN_AI_API_KEY"),
+        validation_alias=AliasChoices("OPENAI_API_KEY", "OPEN_AI_API_KEY", "OPEN_AI_KEY"),
     )
     image_model: str = "gpt-image-2.5-flare-2026-09-08"
     image_generation_enabled: bool = False
-    anthropic_api_key: SecretStr = Field(
-        default=SecretStr(""),
-        validation_alias=AliasChoices("ANTHROPIC_API_KEY", "CLAUDE_API_KEY"),
-    )
-    anthropic_workspace_id: str = ""
     google_search_mode: str = "browser"
     serpapi_api_key: SecretStr = SecretStr("")
     google_search_location: str = "San Antonio, Texas, United States"
     # Full corrections are more reliable for small prose models than literal patch JSON.
     writer_patch_corrections: bool = False
-    writer_model: str = "claude-haiku-4-5-20251001"
+    writer_model: str = "gpt-6-luna"
     slack_listener_enabled: bool = False
     slack_bot_token: SecretStr = SecretStr("")
     slack_app_token: SecretStr = SecretStr("")

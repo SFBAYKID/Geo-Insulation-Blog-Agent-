@@ -116,7 +116,7 @@ def prepare(
     writer = writer or Writer(settings)
     base = json.loads(job["base_payload"])
     company = json.loads((evidence_folder / "company.json").read_text())
-    from anthropic.types import Message
+    from geo_blog.model_response import Message
 
     from .content import response_text
     from .edits import apply_edits
@@ -142,7 +142,7 @@ def prepare(
     if plan_path.exists():
         plan = json.loads(plan_path.read_text())
     else:
-        from .claude_usage import workflow_estimate, workflow_estimate_text
+        from .model_usage import workflow_estimate, workflow_estimate_text
 
         quote = workflow_estimate(
             settings.writer_model,

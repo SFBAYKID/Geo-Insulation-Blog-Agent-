@@ -2,7 +2,7 @@
 
 Writes from supplied Basecamp briefs, checks prose with an AI editor, attaches labeled OpenAI illustrations, and prepares Slack review. Intended publication uses an exact-version Slack approval, a website GitHub PR, verified Vercel publication and then Basecamp completion.
 
-**Setup is incomplete.** Local source has been adapted; no Geo Slack app, timer or droplet service is active. Website adapters require integration with Geo's Astro site. No end-to-end draft or publication has been verified. See SETUP-PROGRESS.md.
+**Setup is incomplete.** Local source has been adapted; the dedicated Geo Slack app is installed, but no listener, timer or droplet service is active. Website adapters require integration with Geo's Astro site. No end-to-end draft or publication has been verified. See SETUP-PROGRESS.md.
 
 Agent repository: SFBAYKID/Geo-Insulation-Blog-Agent- (trailing hyphen). This is not the website repository. Website: https://geo-insulation.com/. Basecamp account 5395893, Geo project 40851698. Blog Work currently has no open briefs; existing Content Sprint optimization tasks are not an authorized replacement for the weekly new-blog queue.
 
@@ -28,3 +28,7 @@ Once prerequisites are verified, `main.py basecamp-queue` reads the queue; `main
 Private storage includes SQLite reservations, draft evidence, provider receipts, media history and exact-version reviews. Never overwrite server state with development state. A crash or ambiguous external action requires reconciliation before retrying. Chase asks the agent to fix failures; the agent handles repairs and safe reruns.
 
 All automated Slack output passes through slack_guard and sentence_lines. Only finished blogs with imagery reach the client. Upstream people supply research and keywords; this agent writes, edits and publishes after approval.
+
+## Model provider
+
+Chase selected OpenAI only. OPENAI_API_KEY powers writing, the AI editor, Slack conversation and images; no Anthropic key is required. The initial budget text model is gpt-6-luna, with the same structural and editorial gates. openai_client.py translates saved requests to the Responses API; model_response.py preserves text, tool calls and provider citations for resumable work. Output truncation and refusals fail closed. Requests have no automatic retries; existing call budgets and reconciliation still apply. Model quality must pass the full test before production.

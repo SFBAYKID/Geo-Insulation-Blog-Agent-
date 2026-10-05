@@ -6,3 +6,4 @@
 - [upstream-research](upstream-research.md)
 - [slack-sentence-lines](slack-sentence-lines.md)
 - [weekly-cadence](weekly-cadence.md)
+- [openai-only](openai-only.md)

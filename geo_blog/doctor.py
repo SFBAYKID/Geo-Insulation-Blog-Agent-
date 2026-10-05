@@ -7,7 +7,7 @@ from .site_preview import REPOSITORY
 def report_readiness(settings: Settings) -> bool:
     """Return false while required Geo connections or website integration are missing."""
     keys = [
-        "anthropic_api_key",
+        "openai_api_key",
         "slack_bot_token",
         "slack_app_token",
         "slack_team_id",
@@ -24,8 +24,6 @@ def report_readiness(settings: Settings) -> bool:
         ]
     else:
         keys += ["airtable_token", "airtable_base_id"]
-    if settings.image_generation_enabled:
-        keys += ["openai_api_key"]
     ready = True
     for key in keys:
         value = getattr(settings, key)

@@ -1,4 +1,4 @@
-"""Durable offline Claude batches. Never fall back to paid synchronous calls."""
+"""Durable offline OpenAI batches. Never fall back to paid synchronous calls."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 import fcntl
 import json
 
-from .claude_usage import cold_estimate, fingerprint, record_usage
+from .model_usage import cold_estimate, fingerprint, record_usage
 
 
 def estimate(requests: Any) -> Any:
@@ -20,7 +20,7 @@ def estimate(requests: Any) -> Any:
     return {
         "requests": len(requests),
         "planning_estimate_usd": round(sum(r["planning_estimate_usd"] for r in rows), 4),
-        "assumptions": "Cold 1h writes, conservative UTF-8 input estimate, full output allowance, Batch token discount; cache hits may lower cost.",
+        "assumptions": "Cold cache writes, conservative UTF-8 input estimate, full output allowance, Batch token discount; cache hits may lower cost.",
     }
 
 

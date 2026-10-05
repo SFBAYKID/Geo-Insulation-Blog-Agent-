@@ -39,7 +39,7 @@ def run_nightly(
     """Reject unattended runs until the actual website workflow is integrated."""
     raise RuntimeError("Unattended nightly runs are not enabled; use mention-triggered drafts")
     settings.require(
-        "anthropic_api_key",
+        "openai_api_key",
         "slack_bot_token",
         "slack_approver_ids",
         "airtable_token",
@@ -138,11 +138,11 @@ def _run(
     folder = settings.storage_dir / draft_id
     folder.mkdir(parents=True, exist_ok=True)
     if not (existing and existing["payload"]) and not (folder / "prepared-payload.json").exists():
-        from .claude_usage import workflow_estimate
+        from .model_usage import workflow_estimate
 
-        topic["claude_cost_estimate"] = workflow_estimate(settings.writer_model)
+        topic["model_cost_estimate"] = workflow_estimate(settings.writer_model)
         (folder / "cost-estimate.json").write_text(
-            json.dumps(topic["claude_cost_estimate"], indent=2)
+            json.dumps(topic["model_cost_estimate"], indent=2)
         )
     (folder / "topic.json").write_text(json.dumps(topic, indent=2))
     stage = "starting"

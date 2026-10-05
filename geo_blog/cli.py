@@ -29,7 +29,7 @@ def run_daily(
     """Reserve a draft, retain its evidence, and optionally deliver it in the saved thread."""
     from .content import Writer
 
-    settings.require("anthropic_api_key")
+    settings.require("openai_api_key")
     if send:
         settings.require("slack_bot_token", "slack_approver_ids")
     day = datetime.now(ZoneInfo(settings.timezone)).date().isoformat()
@@ -65,16 +65,16 @@ def run_daily(
     if settings.website_preview_enabled:
         from .site_preview import preflight
 
-        # Do not reserve a topic or spend on Claude if main cannot build its preview.
+        # Do not reserve a topic or spend on generation if main cannot build its preview.
         preflight(settings)
     draft_id = uuid.uuid4().hex[:16]
-    from .claude_usage import workflow_estimate, workflow_estimate_text
+    from .model_usage import workflow_estimate, workflow_estimate_text
 
     topic = dict(
         topic,
-        claude_cost_estimate=workflow_estimate(settings.writer_model, include_visuals=False),
+        model_cost_estimate=workflow_estimate(settings.writer_model, include_visuals=False),
     )
-    print(workflow_estimate_text(topic["claude_cost_estimate"]), flush=True)
+    print(workflow_estimate_text(topic["model_cost_estimate"]), flush=True)
     run_key = (
         "request:" + request_key
         if request_key

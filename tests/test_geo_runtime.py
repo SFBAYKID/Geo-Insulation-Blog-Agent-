@@ -207,7 +207,7 @@ def test_draft_pipeline_delivers_only_inside_requested_thread(tmp_path, monkeypa
     settings = Settings(
         _env_file=None,
         storage_dir=tmp_path,
-        anthropic_api_key="test",
+        openai_api_key="test",
         slack_bot_token="test",
         slack_approver_ids="owner",
         image_catalog_path=tmp_path / "absent.json",

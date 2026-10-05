@@ -110,10 +110,10 @@ def test_bad_images_and_dimensions_are_rejected():
 def test_fresh_visual_pipeline_uses_api_and_never_silently_falls_back(tmp_path, monkeypatch):
     from types import SimpleNamespace
 
-    from anthropic.types import Message
     from test_visuals import exercise
 
     from geo_blog import images, visuals
+    from geo_blog.model_response import Message
 
     folder = tmp_path / "article"
     folder.mkdir()
