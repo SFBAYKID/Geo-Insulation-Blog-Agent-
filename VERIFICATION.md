@@ -12,3 +12,8 @@ No live end-to-end draft, Slack delivery, website preview, deployment or schedul
 `main.py doctor`: incomplete configuration; provider keys, Slack app, queue and verified website integration pending.
 
 These are local offline results, not evidence of a working live publishing pipeline.
+
+Slack auth.test: PASS (expected workspace and new bot identity).
+Socket Mode: connected=True, then closed.
+Test-channel invite: Slack returned ok=true.
+These checks sent no blog or custom message and did not activate a listener or timer.

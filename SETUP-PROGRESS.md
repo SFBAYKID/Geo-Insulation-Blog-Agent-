@@ -73,3 +73,7 @@ Offline checks: 302 tests passed, Ruff and formatting passed, mypy passed, sourc
 Browser access is now available. Dedicated Geo blog Slack manifest is prepared on the Create review screen in Monarch with app_mentions:read and chat:write, app_mention event, Socket Mode and interactivity. Creation/installation and connections:write token generation await action-time access confirmation. Existing technical-agent app left untouched.
 
 Remaining: Geo Slack app/credentials and reviewer verification; separate Basecamp runtime authorization and new-blog briefs; keyword source access and Geo Airtable/Google worker; Claude/OpenAI keys and model access checks; actual Astro website repo/Vercel integration; icon; all live checks; isolated droplet deployment and test run. Production channel remains unset.
+
+## Slack and repository milestone
+
+Baseline commit 9159ab1 pushed to the supplied agent repository main branch. No secrets or private setup evidence included. After Chase confirmed app access, created/installed dedicated Slack app A0C6QMK0PT3 in workspace T01DFJLFKE3, bot U0C7H50485N. auth.test passed and temporary Socket Mode WebSocket connected, then closed. Invited the new bot only to test channel C0B02721MNK. Verified Chase U01DPJVURHU as initial test reviewer. Private local credentials are now saved; source-supplied Basecamp credentials remain untouched. No local listener remains running. Slack icon and full draft test remain pending.

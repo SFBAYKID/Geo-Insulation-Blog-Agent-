@@ -18,6 +18,12 @@ FIELDS = (
     "SLACK_BOT_TOKEN",
     "SLACK_APP_TOKEN",
     "SLACK_APPROVER_IDS",
+    "SLACK_SIGNING_SECRET",
+    "SLACK_APP_ID",
+    "SLACK_TEAM_ID",
+    "SLACK_CLIENT_ID",
+    "SLACK_BOT_USER_ID",
+    "OPENAI_API_KEY",
     "ANTHROPIC_API_KEY",
     "AIRTABLE_TOKEN",
 )
@@ -52,7 +58,7 @@ class Handler(BaseHTTPRequestHandler):
         )
         self.reply(
             200,
-            '<!doctype html><title>Geo Insulation Blog Agent setup</title><main style="max-width:650px;margin:50px auto;font-family:system-ui"><h1>Geo Insulation Blog Agent setup</h1><p>Saved only in this project’s local .env file. Leave fields blank to keep existing values. Enter Slack member IDs separated by commas.</p>'
+            '<!doctype html><title>Geo Insulation Blog Agent setup</title><main style="max-width:650px;margin:50px auto;font-family:system-ui"><h1>Geo Insulation Blog Agent setup</h1><p>Saved only in this project’s local .env.local file. Leave fields blank to keep existing values. Enter Slack member IDs separated by commas.</p>'
             + f'<form method="post" action="{html.escape(ROUTE)}">{inputs}<button>Save locally</button></form></main>',
         )
 
