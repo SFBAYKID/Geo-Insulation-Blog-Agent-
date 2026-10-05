@@ -2,7 +2,7 @@
   "display_information": {
     "name": "Geo Insulation Blog Agent",
     "description": "Geo blog writing and editing from supplied briefs, with Slack review",
-    "background_color": "#163c42"
+    "background_color": "#2e7d46"
   },
   "features": {
     "bot_user": {

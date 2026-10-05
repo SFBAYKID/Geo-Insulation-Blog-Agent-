@@ -123,3 +123,12 @@ Production delivery, publishing, scheduling and website previews remain disabled
 geo-blog-weekly.timer is installed, disabled and inactive.
 The Mac listener remains off.
 This verifies service deployment and Slack connectivity, not a complete draft/approval/publication test.
+
+
+## Slack branding completed, October 5, 2026
+
+Uploaded and saved the Geo company logo adapted to Slack's square icon format in app A0C6QMK0PT3.
+Source: geo_blog/preview_assets/geo-logo.webp, from Geo's website.
+Square image adaptation is saved at config/geo-slack-icon.png.
+Set and saved the app background to website green #2e7d46; updated the manifest to match.
+Verified the logo in the app preview and the completed Save Changes state.
