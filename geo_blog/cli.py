@@ -153,6 +153,16 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("doctor", help="Show configuration presence without exposing secrets")
+    local_draft = sub.add_parser(
+        "local-draft", help="Generate a local draft and branded preview; never send or publish"
+    )
+    local_draft.add_argument("brief")
+    local_draft.add_argument("--output", default="previews")
+    local_preview = sub.add_parser(
+        "local-preview", help="Render a saved approved payload locally without paid calls"
+    )
+    local_preview.add_argument("payload")
+    local_preview.add_argument("--output", default="previews")
     sub.add_parser("basecamp-queue", help="Read the next Basecamp task without drafting or posting")
     review = sub.add_parser(
         "basecamp-review", help="Deliver or reconcile a saved draft-ready Basecamp update"
@@ -234,6 +244,19 @@ def main() -> None:
 
         if not report_readiness(settings):
             raise SystemExit(1)
+        return
+    if args.command in {"local-draft", "local-preview"}:
+        from pathlib import Path
+
+        from .local_preview import export_preview as export_local
+        from .local_workflow import build_local
+
+        path = (
+            build_local(settings, Path(args.brief), Path(args.output))
+            if args.command == "local-draft"
+            else export_local(Path(args.payload), Path(args.output))
+        )
+        print("Local preview:", path.resolve())
         return
     store = Store(settings.storage_dir)
     if args.command == "basecamp-queue":

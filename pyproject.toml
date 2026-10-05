@@ -16,7 +16,7 @@ dev = ["pytest>=8,<10", "ruff==0.16.8", "mypy==2.3.1", "types-PyYAML", "types-re
 include = ["geo_blog*"]
 
 [tool.setuptools.package-data]
-geo_blog = ["prompts/*.md"]
+geo_blog = ["prompts/*.md", "preview_assets/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -23,3 +23,5 @@ Shared droplet writes are limited to geo-blog and geo-keyword-sync resources. Ne
 ## Current integration limits
 
 The live site is Astro according to verified Basecamp briefs. Inherited export/preview adapters are not yet verified against it. Do not enable website previews or production delivery until the website repo, staging/publishing flow and quality workflow are integrated and tested.
+
+Chase authorized standalone local previews while website-repository and Vercel access are pending. Local preview rendering is independent of website_preview_enabled and never arms publication, posts to Slack or completes Basecamp tasks. Use live Geo styling, labeled illustrations, approved prose and verified asset hashes. Local review is not production approval.

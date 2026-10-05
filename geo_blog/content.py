@@ -598,7 +598,7 @@ class Writer:
                     urls,
                     topic.get("secondary_keyword", ""),
                 )
-                if self.s.website_preview_enabled:
+                if self.s.website_preview_enabled or topic.get("preview_only"):
                     extract_faq(body)
                 if not report.passed or (
                     topic.get("product") and topic["product"]["url"] not in body
@@ -668,7 +668,7 @@ class Writer:
                     topic.get("secondary_keyword", ""),
                 )
                 # Correct FAQ format during writing, before an expensive website build.
-                if self.s.website_preview_enabled:
+                if self.s.website_preview_enabled or topic.get("preview_only"):
                     extract_faq(body)
                 (output_dir / "latest-draft.md").write_text(text)
                 (output_dir / f"structure-{attempt}.json").write_text(

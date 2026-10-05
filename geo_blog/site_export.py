@@ -138,7 +138,7 @@ def export_post(draft: dict[str, Any], checkout: Path, day: str) -> list[str]:
             if value
         ],
         excerpt=fm["description"],
-        category=draft["topic"].get("product", {}).get("name", "Vehicle Care"),
+        category=draft["topic"].get("product", {}).get("name", "Home Insulation"),
         datePublished=day,
         dateModified=day,
         hero=hero,

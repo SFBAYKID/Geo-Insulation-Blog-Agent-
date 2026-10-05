@@ -15,3 +15,7 @@ node_modules/
 .vercel/
 website-checkout/
 *Credentials*
+
+# Private unpublished local previews and generated artwork
+previews/
+assets/blog/

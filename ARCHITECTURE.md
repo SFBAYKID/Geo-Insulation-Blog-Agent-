@@ -21,3 +21,7 @@ slack_guard.py checks destinations and formats sentences. Production capabilitie
 ## Hosting
 
 Only geo-blog services, /opt/geo-blog, /etc/geo-blog and /var/lib/geo-blog may be provisioned on the shared host. Do not modify other tenants or host-wide settings. Website builds and Lighthouse run remotely on exact commits. Thursday 07:00 America/Los_Angeles is confirmed; nothing is enabled until all local and live checks pass. Server state becomes authoritative only after fresh Geo deployment.
+
+## Independent local review
+
+local_workflow.py builds from an explicit local brief using the same writer, editor and image pipeline; it never selects or modifies a remote queue. local_preview.py checks saved approved prose, current structure, image provenance and FAQ syntax before exporting static HTML plus portable Markdown/JSON. Brand assets are packaged locally. The preview library is served only from its output directory on loopback. No website checkout, Vercel deployment or production approval is implied.

@@ -7,3 +7,4 @@
 - [slack-sentence-lines](slack-sentence-lines.md)
 - [weekly-cadence](weekly-cadence.md)
 - [openai-only](openai-only.md)
+- [local-preview-first](local-preview-first.md)

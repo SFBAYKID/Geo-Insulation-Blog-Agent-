@@ -32,3 +32,7 @@ All automated Slack output passes through slack_guard and sentence_lines. Only f
 ## Model provider
 
 Chase selected OpenAI only. OPENAI_API_KEY powers writing, the AI editor, Slack conversation and images; no Anthropic key is required. The initial budget text model is gpt-6-luna, with the same structural and editorial gates. openai_client.py translates saved requests to the Responses API; model_response.py preserves text, tool calls and provider citations for resumable work. Output truncation and refusals fail closed. Requests have no automatic retries; existing call budgets and reconciliation still apply. Model quality must pass the full test before production.
+
+## Local previews while publishing access is pending
+
+Use `main.py local-draft config/practice-brief.json` to generate and resume a local illustrated draft. Use `main.py local-preview storage/local-design-sample/payload.json` to render saved approved content without paid calls. Open `previews/index.html` for the local draft library. See [LOCAL_PREVIEW.md](LOCAL_PREVIEW.md) for the observed brand palette, review files and later integration steps. These commands do not use Slack, mutate Basecamp or publish.
