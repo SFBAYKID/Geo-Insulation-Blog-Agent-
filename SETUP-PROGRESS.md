@@ -1,8 +1,8 @@
 # Geo Insulation blog agent setup
 
-Updated October 4, 2026. Setup incomplete; no runtime is deployed.
+Updated October 5, 2026. Test-channel listener deployed and connected on the droplet; full workflow setup remains incomplete.
 
-Current provider decision: OpenAI only for writing, editing, chat and imagery. Earlier Claude/Anthropic credential requirements below are superseded. Dedicated Slack app is installed and verified; full test and deployment remain pending.
+Current provider decision: OpenAI only for writing, editing, chat and imagery. Earlier Claude/Anthropic credential requirements below are superseded. Dedicated Slack app and droplet listener are installed and verified; full end-to-end test remains pending.
 
 ## Confirmed by Chase
 
@@ -111,3 +111,15 @@ Chase ran the Geo SSH bootstrap. Dedicated geo-blog login verified (uid/gid 1000
 Geo Slack/OpenAI credentials are staged as /var/lib/geo-blog/agent.env.pending, geo-blog-owned mode 0600. Other-customer Basecamp secrets were explicitly excluded. Verified Slack workspace/bot identity, OpenAI writer/image model access and temporary Socket Mode connection, then closed it without messages. Storage is /var/lib/geo-blog/storage; production/publishing/schedule/site preview flags are disabled. Local Slack listener remains off. DEPLOYMENT_TARGET=droplet enables accurate server status reporting.
 
 Reviewed resource-limited Geo units and deploy/install-geo-services.sh are staged; systemd-analyze verify passed. No Geo systemd units are installed yet. Chase must run the prepared installer in the existing root terminal because the isolated Geo account has no admin rights. It installs only /etc/geo-blog and named Geo units, starts the test-channel listener, and leaves the Thursday weekly timer disabled. Permanent listener activation remains unverified until that command runs.
+
+
+## Permanent listener verified, October 5, 2026
+
+Chase successfully ran the root installer.
+Read-back verification confirms geo-blog.service is enabled, active and running, with zero restarts and about 35 MB memory usage at inspection.
+Slack startup logs confirm an established Socket Mode session receiving messages.
+Runtime configuration restricts delivery to C0B02721MNK, monarch-bot-playground.
+Production delivery, publishing, scheduling and website previews remain disabled.
+geo-blog-weekly.timer is installed, disabled and inactive.
+The Mac listener remains off.
+This verifies service deployment and Slack connectivity, not a complete draft/approval/publication test.
