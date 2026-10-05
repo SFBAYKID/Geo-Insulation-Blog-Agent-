@@ -1,0 +1,16 @@
+[Unit]
+Description=Sync Geo keyword source workbook to Airtable
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/geo-keyword-sync
+ExecStart=/opt/geo-keyword-sync/.venv/bin/python -m tools.keyword_sync --config /etc/geo/keyword-sync.json --apply
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/geo/keyword-sync
+TimeoutStartSec=900

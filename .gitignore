@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+storage/
+.venv/
+*service-account*.json
+
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+node_modules/
+.vercel/
+website-checkout/
+*Credentials*

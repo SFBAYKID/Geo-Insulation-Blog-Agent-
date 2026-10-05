@@ -1,0 +1,26 @@
+[Unit]
+Description=Geo Insulation Slack blog agent
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=geo-blog
+Group=geo-blog
+WorkingDirectory=/opt/geo-blog
+EnvironmentFile=/etc/geo-blog/agent.env
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=/opt/node-v22.19.0-linux-x64/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/opt/geo-blog/.venv/bin/python /opt/geo-blog/main.py serve
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/geo-blog /opt/geo-blog
+
+[Install]
+WantedBy=multi-user.target

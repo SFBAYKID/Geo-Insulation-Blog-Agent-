@@ -1,0 +1,11 @@
+[Unit]
+Description=Weekly Geo blog review, Thursdays 7 AM Pacific (9 AM Central)
+
+[Timer]
+# Owner-confirmed cadence, September 25, 2026. The zone keeps 7 AM Pacific across DST.
+OnCalendar=Thu *-*-* 07:00:00 America/Los_Angeles
+Persistent=true
+Unit=geo-blog-weekly.service
+
+[Install]
+WantedBy=timers.target

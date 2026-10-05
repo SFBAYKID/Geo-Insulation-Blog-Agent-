@@ -1,0 +1,20 @@
+[Unit]
+Description=Create the next eligible Geo blog draft
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=geo-blog
+Group=geo-blog
+WorkingDirectory=/opt/geo-blog
+EnvironmentFile=/etc/geo-blog/agent.env
+Environment=PATH=/opt/node-v22.19.0-linux-x64/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/opt/geo-blog/.venv/bin/python /opt/geo-blog/main.py daily --send
+TimeoutStartSec=3600
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/geo-blog /opt/geo-blog

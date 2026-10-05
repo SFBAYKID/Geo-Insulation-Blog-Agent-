@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Geo keyword source check
+
+[Timer]
+OnCalendar=*-*-* 06:30:00 America/Los_Angeles
+Persistent=true
+Unit=geo-keyword-sync.service
+
+[Install]
+WantedBy=timers.target

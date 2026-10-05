@@ -1,0 +1,7 @@
+{
+  "source_file_id": "",
+  "sheet_name": "",
+  "credentials_path": "/etc/geo/google-drive-sa.json",
+  "airtable_config_path": "/etc/geo/airtable.json",
+  "state_dir": "/var/lib/geo/keyword-sync"
+}

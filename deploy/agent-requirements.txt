@@ -1,0 +1,6 @@
+# Runtime plus the existing image/keyword tooling used by server verification.
+-r ../requirements.lock.txt
+requests==2.34.2
+pillow==12.3.0
+google-auth==2.58.0
+openpyxl==3.1.5

@@ -1,0 +1,30 @@
+# Geo Insulation Blog Agent
+
+Writes from supplied Basecamp briefs, checks prose with an AI editor, attaches labeled OpenAI illustrations, and prepares Slack review. Intended publication uses an exact-version Slack approval, a website GitHub PR, verified Vercel publication and then Basecamp completion.
+
+**Setup is incomplete.** Local source has been adapted; no Geo Slack app, timer or droplet service is active. Website adapters require integration with Geo's Astro site. No end-to-end draft or publication has been verified. See SETUP-PROGRESS.md.
+
+Agent repository: SFBAYKID/Geo-Insulation-Blog-Agent- (trailing hyphen). This is not the website repository. Website: https://geo-insulation.com/. Basecamp account 5395893, Geo project 40851698. Blog Work currently has no open briefs; existing Content Sprint optimization tasks are not an authorized replacement for the weekly new-blog queue.
+
+## Local setup and checks
+
+Use Python 3.11+. Keep private settings in .env.local, mode 0600. A separate .env.example contains no credentials. SLACK_LISTENER_ENABLED=false locally. PROVIDER model names need access verification before paid work.
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r deploy/agent-requirements.txt -e '.[dev]'
+.venv/bin/python -m pytest -q
+.venv/bin/ruff check geo_blog tools tests main.py
+.venv/bin/ruff format --check geo_blog tools tests main.py
+.venv/bin/mypy
+.venv/bin/python -m tools.check_project
+.venv/bin/python main.py doctor
+```
+
+Once prerequisites are verified, `main.py basecamp-queue` reads the queue; `main.py practice config/practice-brief.json` writes without Slack; `main.py weekly --test` prepares a checked review in the playground. Paid commands require explicit configured provider access. Test Approve never publishes.
+
+## Recovery and state
+
+Private storage includes SQLite reservations, draft evidence, provider receipts, media history and exact-version reviews. Never overwrite server state with development state. A crash or ambiguous external action requires reconciliation before retrying. Chase asks the agent to fix failures; the agent handles repairs and safe reruns.
+
+All automated Slack output passes through slack_guard and sentence_lines. Only finished blogs with imagery reach the client. Upstream people supply research and keywords; this agent writes, edits and publishes after approval.
