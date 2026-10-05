@@ -1,0 +1,12 @@
+{
+  "project_name": "geo-insulation",
+  "project_id": "prj_BCWJ5JbWhI4zqrn56wMIKp1H9AFy",
+  "project_url": "https://vercel.com/pablo-calvo-s-projects/geo-insulation",
+  "website_repository": "Calvo-Consulting/geo-insulation",
+  "production_branch": "main",
+  "preview_branch": "staging",
+  "production_url": "https://geo-insulation.com/",
+  "preview_url": "https://geo-insulation-git-staging-pablo-calvo-s-projects.vercel.app/",
+  "observed_commit": "5f435fcca4b705736c614a2c5042ad3662c2c79a",
+  "verification": "Vercel dashboard read and GitHub SSH clone; automated publication not yet tested"
+}

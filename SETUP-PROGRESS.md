@@ -132,3 +132,21 @@ Source: geo_blog/preview_assets/geo-logo.webp, from Geo's website.
 Square image adaptation is saved at config/geo-slack-icon.png.
 Set and saved the app background to website green #2e7d46; updated the manifest to match.
 Verified the logo in the app preview and the completed Save Changes state.
+
+
+## Website access verified, October 5, 2026
+
+Chase supplied the Vercel project URL; signed-in dashboard access succeeds.
+Project geo-insulation, ID prj_BCWJ5JbWhI4zqrn56wMIKp1H9AFy, is connected to Calvo-Consulting/geo-insulation.
+Production deploys main to https://geo-insulation.com/; staging has a separate Ready preview.
+GitHub SSH read access and isolated reference clone succeeded at storage/website-reference.
+Both remote branch heads matched 5f435fcca4b705736c614a2c5042ad3662c2c79a at inspection.
+Blog data lives in src/data/posts.js and renders through src/pages/blog/[slug].astro.
+Existing repository workflows deploy main and fast-forward staging when safe.
+No website changes or deployments were made.
+The remaining publishing work is adapting the exporter, configuring runtime GitHub access, and verifying exact-commit previews and quality checks.
+Verified project URLs are stored in config/website-discovery.json.
+
+Chase also supplied production Slack channel C0BP597644B and explicitly approved one introductory message.
+The dedicated bot was added and posted that introduction, receipt 1791227040.024119.
+This one-message exception did not enable persistent production delivery or scheduled publishing.
