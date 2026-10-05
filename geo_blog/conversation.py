@@ -118,7 +118,7 @@ def tool_result(
             "schedule_note": "Unattended scheduling is disabled in this release.",
             "publishing_connected": settings.publishing_enabled,
             "chat_rebuild_connected": settings.revisions_enabled,
-            "runs_on_droplet": False,
+            "runs_on_droplet": settings.deployment_target == "droplet",
             "keyword_source": "Geo Insulation Airtable Keywords view; used and held topics are skipped.",
             "fresh_images_enabled": settings.image_generation_enabled,
             "image_model": settings.image_model,

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import AliasChoices, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     # Full corrections are more reliable for small prose models than literal patch JSON.
     writer_patch_corrections: bool = False
     writer_model: str = "gpt-6-luna"
+    deployment_target: Literal["local", "droplet"] = "local"
     slack_listener_enabled: bool = False
     slack_bot_token: SecretStr = SecretStr("")
     slack_app_token: SecretStr = SecretStr("")
