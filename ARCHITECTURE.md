@@ -4,7 +4,7 @@
 
 Basecamp task → queue reservation → company evidence and verified service match → OpenAI draft → deterministic structure checks and AI editor → image → exact-commit website preview and remote Lighthouse → Slack review → exact-version approval → production_publish.py → verified live article → Basecamp live-URL comment and task completion.
 
-The test-channel listener is deployed. astro_export.py writes the actual Geo posts.js contract and site_preview.py resolves exact-commit Vercel previews with GitHub quality artifacts. The website foundation and sample are in draft PR #81 against staging. The live production verifier now checks the Astro article against approved metadata, FAQ text/schema, image bytes and sitemap. Dedicated runtime credentials, website foundation rollout and full workflow verification remain activation prerequisites.
+The test-channel listener is deployed. astro_export.py writes the actual Geo posts.js contract and site_preview.py resolves exact-commit Vercel previews with GitHub quality artifacts. The practice sample remains isolated in PR #81. The foundation alone is verified on staging and awaits production rollout in PR #87. The live production verifier now checks the Astro article against approved metadata, FAQ text/schema, image bytes and sitemap. Dedicated runtime credentials and the real playground approval are verified. The privileged service update and website foundation rollout remain activation prerequisites.
 
 ## Boundaries and state
 

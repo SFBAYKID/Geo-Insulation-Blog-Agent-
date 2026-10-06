@@ -8,9 +8,9 @@ Type=oneshot
 User=geo-blog
 Group=geo-blog
 WorkingDirectory=/opt/geo-blog
-EnvironmentFile=/etc/geo-blog/agent.env
+EnvironmentFile=/var/lib/geo-blog/agent.env
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
-ExecStart=/opt/geo-blog/.venv/bin/python -m geo_blog.scheduled_preview --production --env-file /etc/geo-blog/agent.env
+ExecStart=/opt/geo-blog/.venv/bin/python -m geo_blog.scheduled_preview --production --env-file /var/lib/geo-blog/agent.env
 TimeoutStartSec=3600
 UMask=0077
 MemoryHigh=384M

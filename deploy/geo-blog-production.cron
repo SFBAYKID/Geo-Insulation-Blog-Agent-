@@ -1,3 +1,3 @@
 # Install only in geo-blog's own crontab after runtime and full playground verification.
 # Host timezone is UTC. The Python gate selects exactly 09:00 America/Los_Angeles.
-0 16,17 * * 3 cd /opt/geo-blog && /opt/geo-blog/.venv/bin/python -m geo_blog.scheduled_preview --production --env-file /etc/geo-blog/agent.env >> /var/lib/geo-blog/storage/scheduled-production.log 2>&1
+0 16,17 * * 3 cd /opt/geo-blog && /opt/geo-blog/.venv/bin/python -m geo_blog.scheduled_preview --production --env-file /var/lib/geo-blog/agent.env >> /var/lib/geo-blog/storage/scheduled-production.log 2>&1

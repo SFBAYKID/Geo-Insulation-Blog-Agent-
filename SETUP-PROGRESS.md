@@ -231,3 +231,18 @@ Organization approval or repository authorization remains unresolved; asked whet
 Checks permission is not required: the active quality gate now reads the named blog-quality workflow and the Lighthouse job from its latest exact-commit attempt through the Actions API.
 Wrong commits, unrelated workflows, failed newer runs and missing/skipped jobs fail closed; artifact quality and GitHub merge protection checks remain in place.
 351 offline tests, Ruff, mypy and source checks pass.
+
+
+## Organization access and real review test verified, October 6
+
+Organization owner approved the dedicated fine-grained token.
+Repository, pull request, Actions and deployment API reads now return HTTP 200.
+On the droplet, verified HTTPS Git read access, configured the geo-blog user's Git credential helper and author identity, and validated the existing exact-commit Lighthouse artifact through the dedicated token.
+Chase clicked the existing playground Approve button; server Store now records integration-preview-20261005 as approved and no production publication plan exists.
+Main advanced to dc17f5f with another approved attic article; preserved it.
+Separated the website foundation from all practice content and merged PR #86 into staging only.
+Foundation source commit 0437952 passed its production build and SEO checks.
+Production foundation PR #87 (staging to main) is prepared as a draft and remains unmerged; its head is aaeb3c0fdca63b0c2524765a021ce680ec18af90.
+Prepared deploy/update-geo-connections.sh for the one-time root-owned service update.
+It validates the real playground approval, installs only Geo code/configuration, and moves the Geo service's environment file to its own mode-0600 runtime file for future maintenance.
+The active service has not yet been restarted with new credentials; production delivery and weekly scheduling remain off.
