@@ -118,30 +118,45 @@ def check_production_quality(checkout: Path, slug: str) -> dict[str, Any]:
 
 
 def require_ci_quality(checkout: Path, sha: str) -> None:
-    """Require GitHub's real quality check for the exact commit before review delivery."""
+    """Require the latest exact-commit quality workflow and its Lighthouse job.
+
+    Actions read access covers both endpoints; a separate Checks grant is not used.
+    """
+    endpoint = (
+        f"repos/{REPOSITORY}/actions/workflows/blog-quality.yml/runs?head_sha={sha}&per_page=100"
+    )
     for _ in range(90):
-        response = json.loads(
-            command(
-                ["gh", "api", f"repos/{REPOSITORY}/commits/{sha}/check-runs?per_page=100"],
-                checkout,
-            )
-        )
-        checks = [
-            check
-            for check in response.get("check_runs", [])
-            if check.get("name") == "lighthouse"
-            and check.get("app", {}).get("slug") == "github-actions"
-            and check.get("head_sha") == sha
+        response = json.loads(command(["gh", "api", endpoint], checkout))
+        runs = [
+            run
+            for run in response.get("workflow_runs", [])
+            if run.get("head_sha") == sha
+            and run.get("path") == ".github/workflows/blog-quality.yml"
         ]
-        if checks:
-            # GitHub returns newest checks first; a retry supersedes an earlier attempt.
-            latest = max(checks, key=lambda check: check["id"])
+        if runs:
+            latest = max(runs, key=lambda run: run["id"])
             if latest.get("status") == "completed":
-                if latest.get("conclusion") == "success":
-                    return
-                raise ValueError(
-                    "GitHub blog quality check failed; preview is not ready for review"
+                if latest.get("conclusion") != "success":
+                    raise ValueError(
+                        "GitHub blog quality check failed; preview is not ready for review"
+                    )
+                jobs_endpoint = (
+                    f"repos/{REPOSITORY}/actions/runs/{latest['id']}"
+                    f"/attempts/{latest['run_attempt']}/jobs?per_page=100"
                 )
+                response = json.loads(command(["gh", "api", jobs_endpoint], checkout))
+                jobs = [job for job in response.get("jobs", []) if job.get("name") == "lighthouse"]
+                if (
+                    len(jobs) != 1
+                    or jobs[0].get("head_sha") != sha
+                    or jobs[0].get("run_id") != latest["id"]
+                    or jobs[0].get("status") != "completed"
+                    or jobs[0].get("conclusion") != "success"
+                ):
+                    raise ValueError(
+                        "GitHub Lighthouse job failed or is missing for the exact workflow attempt"
+                    )
+                return
         time.sleep(10)
     raise ValueError("GitHub blog quality check is pending or missing; inspect before retrying")
 

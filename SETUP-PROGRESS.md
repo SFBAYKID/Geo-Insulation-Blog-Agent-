@@ -220,3 +220,14 @@ The new queue contains zero briefs; no topics or publishing assignments were inv
 Staged the fresh configuration at /var/lib/geo-blog/agent.env.pending (0600) and verified its Basecamp access from the droplet.
 The running service still uses its earlier root-owned configuration; staged credentials are not yet active in that listener.
 Production flags and scheduler remain off pending GitHub runtime authorization, website foundation rollout and complete playground verification.
+
+
+## GitHub fine-grained token and Actions permission, October 6
+
+Chase supplied a new token under GIT_HUB_FINE in the separate Geo setup env file.
+Saved it privately as GITHUB_TOKEN in the active local config and staged it in Geo's pending server config.
+GitHub /user authenticates as SFBAYKID (HTTP 200), but all website-repository probes return HTTP 404, including metadata, pull requests, Actions and deployments.
+Organization approval or repository authorization remains unresolved; asked whether the token shows Pending approval.
+Checks permission is not required: the active quality gate now reads the named blog-quality workflow and the Lighthouse job from its latest exact-commit attempt through the Actions API.
+Wrong commits, unrelated workflows, failed newer runs and missing/skipped jobs fail closed; artifact quality and GitHub merge protection checks remain in place.
+351 offline tests, Ruff, mypy and source checks pass.

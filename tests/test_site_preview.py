@@ -140,24 +140,55 @@ def test_preview_preflight_requires_foundation_on_main(tmp_path, monkeypatch):
 def test_ci_quality_uses_latest_exact_commit_result(monkeypatch):
     from geo_blog.site_preview import require_ci_quality
 
-    check = {
+    workflow = {
         "id": 1,
-        "name": "lighthouse",
-        "app": {"slug": "github-actions"},
+        "path": ".github/workflows/blog-quality.yml",
         "head_sha": "exact",
         "status": "completed",
         "conclusion": "success",
+        "run_attempt": 2,
     }
-    run = Mock(return_value=json.dumps({"check_runs": [check]}))
-    monkeypatch.setattr("geo_blog.site_preview.command", run)
+    job = {
+        "name": "lighthouse",
+        "head_sha": "exact",
+        "run_id": 1,
+        "status": "completed",
+        "conclusion": "success",
+    }
+    workflows = [workflow]
+    jobs = [job]
+    endpoints = []
+
+    def command(args, checkout):
+        endpoints.append(args[2])
+        if "/attempts/" in args[2]:
+            return json.dumps({"jobs": jobs})
+        return json.dumps({"workflow_runs": workflows})
+
+    monkeypatch.setattr("geo_blog.site_preview.command", command)
     monkeypatch.setattr("geo_blog.site_preview.time.sleep", lambda _: None)
     require_ci_quality(Path("."), "exact")
-    for changed in [dict(check, head_sha="other"), dict(check, app={"slug": "other"})]:
-        run.return_value = json.dumps({"check_runs": [changed]})
+    assert endpoints[-1].endswith("/runs/1/attempts/2/jobs?per_page=100")
+    assert all("/check-runs" not in e for e in endpoints)
+    for changed in [dict(workflow, head_sha="other"), dict(workflow, path="other.yml")]:
+        workflows[:] = [changed]
         with pytest.raises(ValueError, match="pending or missing"):
             require_ci_quality(Path("."), "exact")
-    run.return_value = json.dumps({"check_runs": [check, dict(check, id=2, conclusion="failure")]})
+    workflows[:] = [workflow, dict(workflow, id=2, conclusion="failure")]
     with pytest.raises(ValueError, match="check failed"):
+        require_ci_quality(Path("."), "exact")
+    workflows[:] = [workflow]
+    for changed in [
+        dict(job, head_sha="other"),
+        dict(job, run_id=2),
+        dict(job, conclusion="skipped"),
+        dict(job, status="in_progress"),
+    ]:
+        jobs[:] = [changed]
+        with pytest.raises(ValueError, match="Lighthouse job"):
+            require_ci_quality(Path("."), "exact")
+    jobs[:] = []
+    with pytest.raises(ValueError, match="Lighthouse job"):
         require_ci_quality(Path("."), "exact")
 
 
