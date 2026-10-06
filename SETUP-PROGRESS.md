@@ -197,7 +197,12 @@ Weekly sharing rejects staging or foreign-repository PRs before Slack calls.
 Replaced the inherited live-site script with an Astro verifier for approved metadata, FAQ content/schema, image hash/label and sitemap inclusion.
 The practice article remains in unmerged draft PR #81 against staging and is not a production assignment.
 Server verification: geo-blog.service active, no GitHub authorization, and no geo-blog crontab.
-Dedicated Basecamp application registration is prepared in the browser; access confirmation is pending.
+Chase approved and the dedicated Basecamp application was registered as integration 30193 under Monarch. Credentials have not yet been saved and OAuth authorization has not completed: the local callback browser permission was denied. No other customer credential was reused.
 GitHub browser permission was denied; no alternate route was used to create that authorization.
 Runtime credentials, a clean complete playground workflow, website foundation rollout and final server activation remain outstanding.
 No production post or publication occurred during these changes.
+
+Agent commit 8e25ffa is pushed and staged at /opt/geo-blog/releases/8e25ffa.
+All 351 offline tests passed locally and on the droplet; local Ruff, formatting, mypy and source checks passed.
+The existing listener was not replaced and no scheduler was enabled.
+Browser access to github.com, app.basecamp.com and the local OAuth callback was denied by permission review; further connection work awaits restored permissions.
