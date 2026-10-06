@@ -246,3 +246,12 @@ Production foundation PR #87 (staging to main) is prepared as a draft and remain
 Prepared deploy/update-geo-connections.sh for the one-time root-owned service update.
 It validates the real playground approval, installs only Geo code/configuration, and moves the Geo service's environment file to its own mode-0600 runtime file for future maintenance.
 The active service has not yet been restarted with new credentials; production delivery and weekly scheduling remain off.
+
+## Active droplet connections verified after root installation, October 6
+
+Chase ran deploy/update-geo-connections.sh dba4f0f successfully from the droplet's root console.
+Read-back confirms geo-blog.service active/running, zero restarts, and EnvironmentFile=/var/lib/geo-blog/agent.env.
+Verified Basecamp project 40851698, dedicated list 10378779880 with zero open briefs, and GitHub repository access using the active server configuration.
+Website preview, production delivery and publishing remain disabled.
+PR #87 remains a draft, unmerged, at exact head aaeb3c0fdca63b0c2524765a021ce680ec18af90.
+The requested approval to deploy that foundation is still pending; running the server installer is not approval to merge the website PR.
