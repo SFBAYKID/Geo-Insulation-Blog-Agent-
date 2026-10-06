@@ -20,7 +20,7 @@ slack_guard.py checks destinations and formats sentences. Production capabilitie
 
 ## Hosting
 
-Only geo-blog services, /opt/geo-blog, /etc/geo-blog and /var/lib/geo-blog may be provisioned on the shared host. Do not modify other tenants or host-wide settings. Website builds and Lighthouse run remotely on exact commits. Thursday 07:00 America/Los_Angeles is confirmed; nothing is enabled until all local and live checks pass. Server state becomes authoritative only after fresh Geo deployment.
+Only geo-blog services, /opt/geo-blog, /etc/geo-blog and /var/lib/geo-blog may be provisioned on the shared host. Do not modify other tenants or host-wide settings. Website builds and Lighthouse run remotely on exact commits. Wednesday 09:00 America/Los_Angeles is the latest requested schedule; production posting stays disabled. scheduled_preview.py gates the test-only run by Pacific time, validates runtime prerequisites and records one attempt per date before external work. Server state becomes authoritative only after fresh Geo deployment.
 
 ## Independent local review
 

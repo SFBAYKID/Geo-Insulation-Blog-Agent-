@@ -171,3 +171,17 @@ Server draft ID integration-preview-20261005 is pending human approval; no appro
 Sample uses supplied practice content rather than a Basecamp publication assignment.
 Publishing, production delivery and the weekly timer remain disabled.
 The website foundation still needs review/merge, server GitHub runtime credentials still need configuration, and the separate production-publication adapter still needs reconciliation with Astro before any production activation.
+
+
+## Wednesday schedule preparation, October 6
+
+Chase requested Wednesday 9 AM Pacific and explicitly prohibited production-channel posts.
+Asked whether scheduled drafts should go only to the playground or remain disabled; that destination decision is pending.
+Prepared updated systemd templates plus a geo-blog-only cron template; neither scheduler was activated.
+The cron template uses both 16:00 and 17:00 UTC on Wednesday with a Python America/Los_Angeles gate, so only 09:00 Pacific runs.
+Added scheduled_preview.py with one durable date receipt, an overlap lock, no automatic retries after an ambiguous attempt, test-channel enforcement and prerequisite checks before provider work.
+Staged only that module in the Geo server code directory; it is inert without a scheduler.
+Read-only server inspection confirms Basecamp runtime credentials/list, Airtable source and website runtime configuration are missing; production delivery and publication are off.
+The sample remains pending in the server review store; Chase praised the design here but no Slack click was simulated.
+338 offline tests passed, along with Ruff, formatting, mypy and source checks.
+This is schedule preparation, not completed production activation; source briefs, runtime access, destination confirmation and production integration checks remain outstanding.

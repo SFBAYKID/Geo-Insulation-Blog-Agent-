@@ -1,5 +1,5 @@
 [Unit]
-Description=Share the weekly Geo blog in the production channel for approval
+Description=Prepare the weekly Geo blog for playground review
 Wants=network-online.target
 After=network-online.target
 
@@ -10,7 +10,7 @@ Group=geo-blog
 WorkingDirectory=/opt/geo-blog
 EnvironmentFile=/etc/geo-blog/agent.env
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
-ExecStart=/opt/geo-blog/.venv/bin/python /opt/geo-blog/main.py weekly
+ExecStart=/opt/geo-blog/.venv/bin/python -m geo_blog.scheduled_preview --env-file /etc/geo-blog/agent.env
 TimeoutStartSec=3600
 UMask=0077
 MemoryHigh=384M

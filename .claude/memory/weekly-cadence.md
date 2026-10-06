@@ -3,4 +3,4 @@ name: weekly-cadence
 type: feedback
 ---
 
-Chase confirmed Thursday 7 AM America/Los_Angeles. Keep the timer off until a clean playground test passes. Test channel is C0B02721MNK; production destination and approvers are pending.
+On October 6 Chase replaced the earlier Thursday schedule with Wednesday 9 AM America/Los_Angeles. Production channel posting must remain disabled. The prepared schedule targets playground reviews, pending explicit destination confirmation. Keep it disabled until that decision arrives. No approved Basecamp queue or separate runtime credentials are connected yet; never invent scheduled topics or reuse the practice sample automatically.

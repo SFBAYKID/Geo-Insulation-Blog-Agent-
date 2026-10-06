@@ -1,0 +1,4 @@
+# Install only for user geo-blog, and only after channel confirmation.
+# The two UTC times cover PST/PDT; Python permits only Wednesday 09:00 Pacific.
+# Keep the alternative systemd timer disabled to avoid duplicate schedulers.
+0 16,17 * * 3 cd /opt/geo-blog && /opt/geo-blog/.venv/bin/python -m geo_blog.scheduled_preview --env-file /etc/geo-blog/agent.env >> /var/lib/geo-blog/storage/scheduled-preview.log 2>&1

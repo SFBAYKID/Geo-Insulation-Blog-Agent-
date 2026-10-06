@@ -13,3 +13,12 @@ SSH uses geo-blog@143.110.146.87 with the private local key storage/ssh/geo-blog
 Verified geo-blog.service is enabled, active and connected to Slack, with zero restarts at inspection. The weekly timer is disabled and inactive; production delivery and publishing remain disabled.
 
 The Mac listener stays off. Server DEPLOYMENT_TARGET=droplet lets the bot report its actual deployment location. Basecamp runtime authorization, queue selection and production integration remain pending.
+
+
+## Latest schedule request
+
+Wednesday 09:00 America/Los_Angeles replaces the earlier Thursday cadence.
+The updated timer/service and deploy/geo-blog-playground.cron are prepared locally, not activated.
+The server has the readiness guard module but no Geo user crontab.
+Only one scheduler may be enabled after destination confirmation; keep the other disabled.
+The guard refuses production posting and does not spend on drafts with missing queue or preview prerequisites.
