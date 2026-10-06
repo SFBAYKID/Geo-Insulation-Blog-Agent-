@@ -67,7 +67,7 @@ def test_jpeg_reader_rejects_identifying_metadata():
 def test_production_quality_gate_blocks_bad_or_wrong_article(tmp_path, monkeypatch):
     from geo_blog.site_preview import check_production_quality
 
-    web = tmp_path / "geo-web"
+    web = tmp_path
     (web / "scripts").mkdir(parents=True)
     (web / "scripts/check-lighthouse.mjs").touch()
     (web / "lighthouse-audit").mkdir()
@@ -127,9 +127,9 @@ def test_preview_preflight_requires_foundation_on_main(tmp_path, monkeypatch):
         preflight(settings)
     run.return_value = "\n".join(
         [
-            "geo-web/scripts/check-lighthouse.mjs",
-            "geo-web/scripts/prepare-blog-images.mjs",
-            "geo-web/src/components/ui/BlogPhoto.tsx",
+            "scripts/check-lighthouse.mjs",
+            "scripts/check-blog-rendered.mjs",
+            "src/pages/blog/[slug].astro",
             ".github/workflows/blog-quality.yml",
         ]
     )
@@ -189,9 +189,9 @@ def test_preview_preflight_can_read_pinned_test_foundation(tmp_path, monkeypatch
     run = Mock(
         return_value="\n".join(
             [
-                "geo-web/scripts/check-lighthouse.mjs",
-                "geo-web/scripts/prepare-blog-images.mjs",
-                "geo-web/src/components/ui/BlogPhoto.tsx",
+                "scripts/check-lighthouse.mjs",
+                "scripts/check-blog-rendered.mjs",
+                "src/pages/blog/[slug].astro",
                 ".github/workflows/blog-quality.yml",
             ]
         )

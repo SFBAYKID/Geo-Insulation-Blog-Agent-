@@ -4,7 +4,7 @@
 
 Basecamp task → queue reservation → company evidence and verified service match → OpenAI draft → deterministic structure checks and AI editor → image → exact-commit website preview and remote Lighthouse → Slack review → exact-version approval → production_publish.py → verified live article → Basecamp live-URL comment and task completion.
 
-The source implements these stages, but Geo deployment is not connected. Website export, preview and publication adapters retain an integration placeholder and must be reconciled with the actual Astro routes, data files and staging branch. No inherited website foundation or prior verification applies to Geo.
+The test-channel listener is deployed. astro_export.py writes the actual Geo posts.js contract and site_preview.py resolves exact-commit Vercel previews with GitHub quality artifacts. The website foundation and sample are in draft PR #81 against staging. The production publication adapter and runtime GitHub credentials still need reconciliation before production activation.
 
 ## Boundaries and state
 

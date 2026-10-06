@@ -150,3 +150,24 @@ Verified project URLs are stored in config/website-discovery.json.
 Chase also supplied production Slack channel C0BP597644B and explicitly approved one introductory message.
 The dedicated bot was added and posted that introduction, receipt 1791227040.024119.
 This one-message exception did not enable persistent production delivery or scheduled publishing.
+
+
+## Astro preview integration and Slack test card
+
+Implemented the actual src/data/posts.js exporter, preserving existing articles and escaping authored HTML.
+Export refuses duplicate slugs, image overwrites, altered image hashes, invalid dimensions and unlabeled generated illustrations.
+Website draft PR: https://github.com/Calvo-Consulting/geo-insulation/pull/81, targeting staging.
+It includes the existing approved practice article, matching FAQ accordion/schema, metadata overrides only for agent articles, mobile hero rendition and deferred footer reviews on agent articles.
+No merge to staging or main occurred.
+The authoritative final tested website commit is 7cca3edbe04a8b5e5f4ff36d449d7549ca808df3.
+GitHub run 37420600899 passed the build, all 133 pages' existing SEO checks, rendered article checks and three-run mobile Lighthouse medians: performance 90, accessibility 100, best practices 100, SEO 100.
+Remote artifact validation now rejects a mismatched commit and an older successful workflow superseded by a failed run.
+Agent validation: 331 tests passed, Ruff lint/format, mypy and source limits passed.
+Hosted preview: https://geo-insulation-9d6heyhp2-pablo-calvo-s-projects.vercel.app/blog/attic-insulation-planning-san-antonio/
+Vercel authentication is required; Chase's existing signed-in browser opened it successfully.
+Desktop and 390px mobile rendering inspected; mobile image selected, no horizontal overflow, FAQ expansion passed.
+Posted test review from the server's Geo bot only to C0B02721MNK, message 1791268378.637799.
+Server draft ID integration-preview-20261005 is pending human approval; no approval click has been simulated.
+Sample uses supplied practice content rather than a Basecamp publication assignment.
+Publishing, production delivery and the weekly timer remain disabled.
+The website foundation still needs review/merge, server GitHub runtime credentials still need configuration, and the separate production-publication adapter still needs reconciliation with Astro before any production activation.

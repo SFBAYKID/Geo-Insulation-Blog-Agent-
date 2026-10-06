@@ -20,7 +20,7 @@ from zoneinfo import ZoneInfo
 from .settings import Settings
 from .site_export import export_post
 
-REPOSITORY = "GEO_WEBSITE_NOT_CONFIGURED"
+REPOSITORY = "Calvo-Consulting/geo-insulation"
 
 
 def preflight(settings: Settings) -> None:
@@ -38,9 +38,9 @@ def preflight(settings: Settings) -> None:
         settings.storage_dir.resolve(),
     ).splitlines()
     required = {
-        "geo-web/scripts/check-lighthouse.mjs",
-        "geo-web/scripts/prepare-blog-images.mjs",
-        "geo-web/src/components/ui/BlogPhoto.tsx",
+        "scripts/check-lighthouse.mjs",
+        "scripts/check-blog-rendered.mjs",
+        "src/pages/blog/[slug].astro",
         ".github/workflows/blog-quality.yml",
     }
     if not required.issubset(paths):
@@ -95,10 +95,10 @@ def deployment_url(checkout: Path, sha: str) -> str:
 
 def check_production_quality(checkout: Path, slug: str) -> dict[str, Any]:
     """Block preview delivery until the actual production build meets Lighthouse targets."""
-    web = checkout / "geo-web"
+    web = checkout
     if not (web / "scripts/check-lighthouse.mjs").exists():
-        raise ValueError("Website requires the production Lighthouse gate from foundation PR #41")
-    command(["env", "VERCEL_ENV=production", "npm", "run", "check"], web)
+        raise ValueError("Website requires the Geo blog Lighthouse gate")
+    command(["env", "VERCEL_ENV=production", "npm", "run", "build"], web)
     command(["npm", "run", "check:lighthouse", "--", "/blog/" + slug], web)
     summary = json.loads((web / "lighthouse-audit/summary.json").read_text())
     result = next((r for r in summary["results"] if r["route"] == "/blog/" + slug), None)
@@ -196,21 +196,8 @@ def prepare(settings: Settings, draft: dict[str, Any], draft_id: str) -> dict[st
     # Preserve the website's canonical checks; never push an unchecked article.
     quality: dict[str, Any] = {}
     if not settings.website_checks_remote:
-        command(["npm", "install", "--ignore-scripts"], checkout / "geo-web")
+        command(["npm", "ci", "--ignore-scripts"], checkout)
         quality = check_production_quality(checkout, draft["front_matter"]["slug"])
-    paths += ["geo-web/package-lock.json"]
-    note = "Blog-agent draft preview; human copy and photo review required. No automatic merge.\n"
-    for name in ["README.md", "MEMORY.md"]:
-        path = checkout / name
-        path.write_text(path.read_text() + "\n## Blog draft " + draft_id + "\n\n" + note)
-        paths.append(name)
-    doc = checkout / "docs" / ("blog-draft-" + draft_id + ".md")
-    doc.write_text(
-        "# Blog draft review\n\n"
-        + note
-        + "\nThe agent exports typed content, checks the site, and opens a draft PR. Approving in Slack is editorial only. Merge only after copy and final media are reviewed.\n"
-    )
-    paths.append(str(doc.relative_to(checkout)))
     command(["git", "add", "--", *paths], checkout)
     command(["git", "commit", "-m", "feat(blog): prepare article for preview review"], checkout)
     sha = command(["git", "rev-parse", "HEAD"], checkout)
@@ -218,7 +205,7 @@ def prepare(settings: Settings, draft: dict[str, Any], draft_id: str) -> dict[st
     command(["git", "push", "-u", "origin", branch], checkout)
     body = root / "pr-body.md"
     body.write_text(
-        "Adds a blog draft to the real Geo layout for Slack review.\n\nValidation: website checks must pass before review delivery.\n\nDeferred: final imagery, human editorial approval and production publication. Do not merge a placeholder image.\n"
+        "Adds a blog draft to the real Geo layout for Slack review.\n\nValidation: website checks must pass before review delivery.\n\nDeferred: human editorial approval and production publication. This draft PR does not authorize either.\n"
     )
     pr = command(
         [
@@ -257,7 +244,7 @@ def prepare(settings: Settings, draft: dict[str, Any], draft_id: str) -> dict[st
             checkout, sha, draft["front_matter"]["slug"]
         )
     saved.update(
-        preview_url=url + "/blog/" + draft["front_matter"]["slug"],
+        preview_url=url + "/blog/" + draft["front_matter"]["slug"] + "/",
         state="ready",
         ci_quality_commit=sha,
     )
