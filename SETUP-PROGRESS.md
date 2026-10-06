@@ -206,3 +206,17 @@ Agent commit 8e25ffa is pushed and staged at /opt/geo-blog/releases/8e25ffa.
 All 351 offline tests passed locally and on the droplet; local Ruff, formatting, mypy and source checks passed.
 The existing listener was not replaced and no scheduler was enabled.
 Browser access to github.com, app.basecamp.com and the local OAuth callback was denied by permission review; further connection work awaits restored permissions.
+
+
+## Dedicated Basecamp authorization verified, October 6
+
+Chase completed OAuth authorization for Geo application 30193.
+Corrected the newly supplied secret from the separate Geo setup file without changing older customer entries.
+Fresh Geo access and refresh tokens are saved privately; refresh and project access passed through the runtime Basecamp adapter.
+Verified account 5395893 and Geo project 40851698.
+The old Blog Work list 8271007254 now returns 404 and is absent from active and archived lists.
+Created and verified a separate internal Geo Blog Briefs list 10378779880 in the Geo project, leaving existing task lists untouched.
+The new queue contains zero briefs; no topics or publishing assignments were invented.
+Staged the fresh configuration at /var/lib/geo-blog/agent.env.pending (0600) and verified its Basecamp access from the droplet.
+The running service still uses its earlier root-owned configuration; staged credentials are not yet active in that listener.
+Production flags and scheduler remain off pending GitHub runtime authorization, website foundation rollout and complete playground verification.
