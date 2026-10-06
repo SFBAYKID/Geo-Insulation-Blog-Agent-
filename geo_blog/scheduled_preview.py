@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import fcntl
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -39,6 +40,7 @@ def readiness(settings: Settings, *, production: bool = False) -> list[str]:
         "slack_team_id",
         "slack_approver_ids",
         "website_repository",
+        "github_token",
         "website_preview_enabled",
         "image_generation_enabled",
     ):
@@ -117,6 +119,10 @@ def main() -> None:
     args = parser.parse_args()
     options: dict[str, Any] = {"_env_file": args.env_file}
     settings = Settings(**options)
+    # Cron does not source EnvironmentFile like systemd. The GitHub CLI and its
+    # Git credential helper need the explicit Geo token in their child environment.
+    if settings.github_token.get_secret_value():
+        os.environ["GH_TOKEN"] = settings.github_token.get_secret_value()
     print(
         json.dumps(
             {"missing": readiness(settings, production=args.production)}

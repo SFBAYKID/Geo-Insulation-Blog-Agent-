@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     vercel_automation_bypass_secret: SecretStr = SecretStr("")
     website_source: Path = Path("website-checkout")
     website_repository: str = ""
+    github_token: SecretStr = SecretStr("")
     website_base_commit: str = ""
     website_base_branch: str = "main"
     production_delivery_enabled: bool = False

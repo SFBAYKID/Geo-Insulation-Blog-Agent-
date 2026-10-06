@@ -64,3 +64,18 @@ def test_production_schedule_uses_guarded_weekly_flow_once(tmp_path, monkeypatch
     assert run(s, now=now, production=True)["status"] == "already_attempted"
     assert worker.call_count == 1
     assert (tmp_path / "scheduled-production" / "2026-10-07.json").exists()
+
+
+def test_cron_entrypoint_passes_explicit_geo_token_without_printing(tmp_path, monkeypatch, capsys):
+    import os
+    import sys
+
+    from geo_blog.scheduled_preview import main
+
+    env_file = tmp_path / "test.env"
+    env_file.write_text("GITHUB_TOKEN=fake-geo-only-token\n")
+    monkeypatch.setenv("GH_TOKEN", "different-token")
+    monkeypatch.setattr(sys, "argv", ["scheduled_preview", "--env-file", str(env_file), "--check"])
+    main()
+    assert os.environ["GH_TOKEN"] == "fake-geo-only-token"
+    assert "fake-geo-only-token" not in capsys.readouterr().out
