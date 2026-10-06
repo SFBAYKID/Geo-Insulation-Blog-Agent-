@@ -106,34 +106,11 @@ def wait_production(checkout: Path, sha: str) -> None:
 
 
 def verify_live(plan: dict[str, Any], draft: dict[str, Any], checkout: Path, sha: str) -> str:
-    """Check actual production HTML, photo, metadata, schema, GA4 and sitemap."""
-    from bs4 import BeautifulSoup
+    """Check the live Astro article against approved prose and immutable imagery."""
+    from .live_verification import verify_article
 
-    url = "https://geo-insulation.com/blog/" + draft["front_matter"]["slug"]
-    with httpx.Client(timeout=45, follow_redirects=True, trust_env=False) as client:
-        response = client.get(url)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, "html.parser")
-        if (
-            str(response.url).rstrip("/") != url
-            or "noindex" in response.headers.get("x-robots-tag", "").lower()
-        ):
-            raise ValueError("Live article URL or indexing is incorrect")
-        hero = draft["topic"]["hero"]
-        image = client.get("https://geo-insulation.com" + hero["src"])
-        image.raise_for_status()
-        if hashlib.sha256(image.content).hexdigest() != draft["media_provenance"]["sha256"]:
-            raise ValueError("Live photo differs from the reviewed photo")
-        if not soup.select_one("main img"):
-            raise ValueError("Live article has no rendered image")
-    command(["git", "fetch", "origin", "main:refs/remotes/origin/main"], checkout)
-    # The website's verifier checks title/H1, keywords, indexability, GA4, schema,
-    # image alts and sitemap against the checked typed article modules.
-    command(
-        ["env", "DEPLOYMENT_SHA=" + sha, "node", "scripts/check-published-blog.mjs"],
-        checkout / "geo-web",
-    )
-    return url
+    with httpx.Client(timeout=45, follow_redirects=False, trust_env=False) as client:
+        return verify_article(draft, client)
 
 
 def record_basecamp(settings: Settings, draft: dict[str, Any], url: str) -> None:
@@ -171,7 +148,7 @@ def record_basecamp(settings: Settings, draft: dict[str, Any], url: str) -> None
 
 def run_once(settings: Settings) -> bool:
     """Resume durable approved work; never replay an uncertain merge without reconciling it."""
-    if not settings.production_delivery_enabled:
+    if not settings.production_delivery_enabled or not settings.publishing_enabled:
         return False
     plan_path = settings.storage_dir / "publication-plan.json"
     if not plan_path.exists():

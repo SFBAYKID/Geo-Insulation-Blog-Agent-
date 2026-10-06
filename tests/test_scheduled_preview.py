@@ -44,3 +44,23 @@ def test_ambiguous_generation_is_not_retried(tmp_path, monkeypatch):
     assert run(s, now=now)["status"] == "already_attempted"
     assert worker.call_count == 1
     assert worker.call_args.kwargs["send"] is True
+
+
+def test_production_schedule_requires_publishing_and_destination(tmp_path):
+    s = Settings(_env_file=None, storage_dir=tmp_path)
+    missing = readiness(s, production=True)
+    assert "publishing_enabled" in missing
+    assert "production_delivery_enabled" in missing
+    assert "slack_production_channel_id" in missing
+
+
+def test_production_schedule_uses_guarded_weekly_flow_once(tmp_path, monkeypatch):
+    s = Settings(_env_file=None, storage_dir=tmp_path)
+    monkeypatch.setattr("geo_blog.scheduled_preview.readiness", lambda *a, **kw: [])
+    worker = Mock(return_value="new-blog")
+    monkeypatch.setattr("geo_blog.weekly.run_weekly_notifying", worker)
+    now = datetime(2026, 10, 7, 16, 0, tzinfo=timezone.utc)
+    assert run(s, now=now, production=True)["draft_id"] == "new-blog"
+    assert run(s, now=now, production=True)["status"] == "already_attempted"
+    assert worker.call_count == 1
+    assert (tmp_path / "scheduled-production" / "2026-10-07.json").exists()

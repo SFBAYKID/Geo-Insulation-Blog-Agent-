@@ -4,7 +4,7 @@
 
 Basecamp task → queue reservation → company evidence and verified service match → OpenAI draft → deterministic structure checks and AI editor → image → exact-commit website preview and remote Lighthouse → Slack review → exact-version approval → production_publish.py → verified live article → Basecamp live-URL comment and task completion.
 
-The test-channel listener is deployed. astro_export.py writes the actual Geo posts.js contract and site_preview.py resolves exact-commit Vercel previews with GitHub quality artifacts. The website foundation and sample are in draft PR #81 against staging. The production publication adapter and runtime GitHub credentials still need reconciliation before production activation.
+The test-channel listener is deployed. astro_export.py writes the actual Geo posts.js contract and site_preview.py resolves exact-commit Vercel previews with GitHub quality artifacts. The website foundation and sample are in draft PR #81 against staging. The live production verifier now checks the Astro article against approved metadata, FAQ text/schema, image bytes and sitemap. Dedicated runtime credentials, website foundation rollout and full workflow verification remain activation prerequisites.
 
 ## Boundaries and state
 
@@ -20,7 +20,7 @@ slack_guard.py checks destinations and formats sentences. Production capabilitie
 
 ## Hosting
 
-Only geo-blog services, /opt/geo-blog, /etc/geo-blog and /var/lib/geo-blog may be provisioned on the shared host. Do not modify other tenants or host-wide settings. Website builds and Lighthouse run remotely on exact commits. Wednesday 09:00 America/Los_Angeles is the latest requested schedule; production posting stays disabled. scheduled_preview.py gates the test-only run by Pacific time, validates runtime prerequisites and records one attempt per date before external work. Server state becomes authoritative only after fresh Geo deployment.
+Only geo-blog services, /opt/geo-blog, /etc/geo-blog and /var/lib/geo-blog may be provisioned on the shared host. Do not modify other tenants or host-wide settings. Website builds and Lighthouse run remotely on exact commits. Wednesday 09:00 America/Los_Angeles is confirmed for production channel C0BP597644B. scheduled_preview.py --production calls the guarded weekly review flow, validates runtime prerequisites and records one attempt per Pacific date before external work. The default mode stays playground-only. Neither schedule is installed until readiness verification succeeds. Server state becomes authoritative only after fresh Geo deployment.
 
 ## Independent local review
 

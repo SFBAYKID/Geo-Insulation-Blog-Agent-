@@ -14,6 +14,9 @@ def setup_run(tmp_path, monkeypatch):
         _env_file=None,
         storage_dir=tmp_path,
         production_delivery_enabled=True,
+        publishing_enabled=True,
+        website_preview_enabled=True,
+        website_repository=pub.REPOSITORY,
         slack_production_channel_id="C_GEO_PRODUCTION_TEST",
         slack_approver_ids="U_GEO_APPROVER_ONE,U_GEO_APPROVER_TWO",
     )
@@ -107,3 +110,11 @@ def test_merged_resume_does_not_merge_again(tmp_path, monkeypatch):
     assert pub.run_once(s)
     assert not any(url.endswith("/merge") for url, _ in calls)
     pub.wait_production.assert_called_once()
+
+
+def test_disabled_publishing_never_consumes_approval(tmp_path, monkeypatch):
+    s, _, calls = setup_run(tmp_path, monkeypatch)
+    s = s.model_copy(update={"publishing_enabled": False})
+    assert not pub.run_once(s)
+    assert not calls
+    assert json.loads((tmp_path / "production-review.json").read_text())["state"] == "queued"

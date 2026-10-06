@@ -82,7 +82,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def enforce_test_boundary(self) -> Self:
-        """This release is a draft-only test agent, never a production publisher."""
+        """Keep ordinary Slack operations isolated and require explicit publication setup."""
         if self.blog_queue_source not in {"airtable", "basecamp"}:
             raise ValueError("Unknown blog queue source")
         if self.basecamp_draft_ready_enabled and (
@@ -97,8 +97,19 @@ class Settings(BaseSettings):
             raise ValueError("Active Slack channel must be the test channel")
         if self.slack_test_channel_id == self.slack_production_channel_id:
             raise ValueError("Test and production channels must differ")
-        if self.publishing_enabled or self.daily_enabled:
-            raise ValueError("Publishing and unattended scheduling are disabled for test setup")
+        if self.daily_enabled:
+            raise ValueError("Daily scheduling is disabled; use the Pacific weekly scheduler")
+        if self.publishing_enabled and not (
+            self.production_delivery_enabled
+            and self.slack_production_channel_id
+            and self.approvers
+            and self.website_preview_enabled
+            and self.website_repository
+            and self.website_base_branch == self.website_production_branch == "main"
+        ):
+            raise ValueError(
+                "Publishing requires production destination, reviewers and main previews"
+            )
         return self
 
     @property

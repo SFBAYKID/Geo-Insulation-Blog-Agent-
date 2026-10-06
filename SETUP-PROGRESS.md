@@ -185,3 +185,19 @@ Read-only server inspection confirms Basecamp runtime credentials/list, Airtable
 The sample remains pending in the server review store; Chase praised the design here but no Slack click was simulated.
 338 offline tests passed, along with Ruff, formatting, mypy and source checks.
 This is schedule preparation, not completed production activation; source briefs, runtime access, destination confirmation and production integration checks remain outstanding.
+
+
+## Production authorization and adapter repair, October 6
+
+Chase explicitly authorized production destination C0BP597644B, Basecamp connection, publishing integration and Wednesday 09:00 Pacific scheduling.
+This supersedes the prior destination question; do not ask it again.
+Added an explicit production scheduler mode with separate durable receipts and the existing guarded weekly flow.
+Publishing now requires both production delivery and publication enable flags.
+Weekly sharing rejects staging or foreign-repository PRs before Slack calls.
+Replaced the inherited live-site script with an Astro verifier for approved metadata, FAQ content/schema, image hash/label and sitemap inclusion.
+The practice article remains in unmerged draft PR #81 against staging and is not a production assignment.
+Server verification: geo-blog.service active, no GitHub authorization, and no geo-blog crontab.
+Dedicated Basecamp application registration is prepared in the browser; access confirmation is pending.
+GitHub browser permission was denied; no alternate route was used to create that authorization.
+Runtime credentials, a clean complete playground workflow, website foundation rollout and final server activation remain outstanding.
+No production post or publication occurred during these changes.

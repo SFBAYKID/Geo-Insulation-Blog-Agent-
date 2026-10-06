@@ -38,6 +38,9 @@ def env(tmp_path, monkeypatch):
         _env_file=None,
         storage_dir=tmp_path,
         production_delivery_enabled=True,
+        publishing_enabled=True,
+        website_preview_enabled=True,
+        website_repository=site_preview.REPOSITORY,
         slack_production_channel_id="C_GEO_PRODUCTION_TEST",
         slack_approver_ids="U_GEO_APPROVER_ONE,U_GEO_APPROVER_TWO",
     )
@@ -53,7 +56,12 @@ def env(tmp_path, monkeypatch):
 
     monkeypatch.setattr(site_preview, "command", command)
     monkeypatch.setattr(site_preview, "require_ci_quality", Mock())
-    pr = {"head": {"sha": "head"}, "state": "open", "draft": True}
+    pr = {
+        "head": {"sha": "head", "repo": {"full_name": site_preview.REPOSITORY}},
+        "base": {"ref": "main", "repo": {"full_name": site_preview.REPOSITORY}},
+        "state": "open",
+        "draft": True,
+    }
 
     def api(checkout, endpoint, *args):
         return {"object": {"sha": "main-sha"}} if endpoint.endswith("/main") else pr
@@ -214,6 +222,9 @@ def test_basecamp_failure_does_not_undo_publication(tmp_path, monkeypatch):
         _env_file=None,
         storage_dir=tmp_path,
         production_delivery_enabled=True,
+        publishing_enabled=True,
+        website_preview_enabled=True,
+        website_repository=site_preview.REPOSITORY,
         slack_production_channel_id="C_GEO_PRODUCTION_TEST",
         slack_approver_ids="U_GEO_APPROVER_ONE,U_GEO_APPROVER_TWO",
     )
@@ -238,7 +249,7 @@ def test_blog_without_approved_photo_never_reaches_client_reviewer(tmp_path, env
     payload.update(media_status="awaiting_approved_match", media_provenance=None)
     with store.db() as db:
         db.execute("UPDATE drafts SET payload=? WHERE id='wk1'", (json.dumps(payload),))
-    with pytest.raises(ValueError, match="photo"):
+    with pytest.raises(ValueError, match="image"):
         weekly.share(settings, store, "wk1")
     client.chat_postMessage.assert_not_called()
 
@@ -260,4 +271,22 @@ def test_empty_week_is_reported_instead_of_silent(tmp_path, env, monkeypatch):
     monkeypatch.setattr("geo_blog.cli.run_daily", lambda s, st, send: None)
     with pytest.raises(ValueError, match="No finished blog"):
         weekly.run_weekly(settings, store)
+    client.chat_postMessage.assert_not_called()
+
+
+def test_staging_pr_never_reaches_production_channel(tmp_path, env, monkeypatch):
+    settings, store, client, _ = env
+    ready_draft(tmp_path, store)
+    monkeypatch.setattr(
+        production_publish,
+        "api",
+        lambda *a: {
+            "head": {"sha": "head", "repo": {"full_name": site_preview.REPOSITORY}},
+            "base": {"ref": "staging", "repo": {"full_name": site_preview.REPOSITORY}},
+            "state": "open",
+            "draft": True,
+        },
+    )
+    with pytest.raises(ValueError, match="Website PR"):
+        weekly.share(settings, store, "wk1")
     client.chat_postMessage.assert_not_called()

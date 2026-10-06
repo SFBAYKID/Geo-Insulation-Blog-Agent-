@@ -1,4 +1,4 @@
-"""Run one scheduled playground draft per Pacific Wednesday, never production."""
+"""Run one explicitly configured review workflow per Pacific Wednesday."""
 
 from __future__ import annotations
 
@@ -17,12 +17,22 @@ from .store import Store
 ZONE = ZoneInfo("America/Los_Angeles")
 
 
-def readiness(settings: Settings) -> list[str]:
+def readiness(settings: Settings, *, production: bool = False) -> list[str]:
     """List missing runtime prerequisites without spending or contacting providers."""
     missing = []
     require_test_channel(settings, settings.slack_channel_id)
-    if settings.production_delivery_enabled or settings.publishing_enabled:
+    if not production and (settings.production_delivery_enabled or settings.publishing_enabled):
         raise ValueError("Scheduled playground runs require production delivery disabled")
+    if production:
+        for field in (
+            "production_delivery_enabled",
+            "publishing_enabled",
+            "slack_production_channel_id",
+        ):
+            if not getattr(settings, field):
+                missing.append(field)
+        if settings.website_base_branch != "main":
+            missing.append("website_base_branch=main")
     for name in (
         "openai_api_key",
         "slack_bot_token",
@@ -56,12 +66,15 @@ def readiness(settings: Settings) -> list[str]:
     return missing
 
 
-def run(settings: Settings, *, now: datetime | None = None) -> dict[str, Any]:
+def run(
+    settings: Settings, *, now: datetime | None = None, production: bool = False
+) -> dict[str, Any]:
     """Use a timezone gate and durable date receipt to avoid DST and retry duplicates."""
     current = (now or datetime.now(ZONE)).astimezone(ZONE)
+    result: dict[str, Any]
     if current.weekday() != 2 or current.hour != 9 or current.minute != 0:
         return {"status": "outside_schedule"}
-    folder = settings.storage_dir / "scheduled-previews"
+    folder = settings.storage_dir / ("scheduled-production" if production else "scheduled-previews")
     folder.mkdir(parents=True, exist_ok=True)
     path = folder / (current.date().isoformat() + ".json")
     with (folder / "run.lock").open("a") as lock:
@@ -71,7 +84,7 @@ def run(settings: Settings, *, now: datetime | None = None) -> dict[str, Any]:
             return {"status": "already_running"}
         if path.exists():
             return {"status": "already_attempted", "receipt": str(path)}
-        missing = readiness(settings)
+        missing = readiness(settings, production=True) if production else readiness(settings)
         if missing:
             result = {"status": "not_ready", "missing": missing}
             path.write_text(json.dumps(result, indent=2))
@@ -80,9 +93,14 @@ def run(settings: Settings, *, now: datetime | None = None) -> dict[str, Any]:
         # ambiguous scheduled run automatically; keep its evidence for recovery.
         path.write_text(json.dumps({"status": "running"}))
         try:
-            from .cli import run_daily
+            if production:
+                from .weekly import run_weekly_notifying
 
-            draft_id = run_daily(settings, Store(settings.storage_dir), send=True)
+                draft_id = run_weekly_notifying(settings, Store(settings.storage_dir))
+            else:
+                from .cli import run_daily
+
+                draft_id = run_daily(settings, Store(settings.storage_dir), send=True)
             result = {"status": "delivered" if draft_id else "queue_empty", "draft_id": draft_id}
         except Exception as exc:
             result = {"status": "needs_inspection", "error": type(exc).__name__}
@@ -95,10 +113,17 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--env-file", type=Path, required=True)
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--production", action="store_true")
     args = parser.parse_args()
     options: dict[str, Any] = {"_env_file": args.env_file}
     settings = Settings(**options)
-    print(json.dumps({"missing": readiness(settings)} if args.check else run(settings)))
+    print(
+        json.dumps(
+            {"missing": readiness(settings, production=args.production)}
+            if args.check
+            else run(settings, production=args.production)
+        )
+    )
 
 
 if __name__ == "__main__":

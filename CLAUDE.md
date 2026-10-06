@@ -4,7 +4,7 @@ Follow AGENTS.md. Read README.md for commands, ARCHITECTURE.md for system behavi
 
 Write homeowner-focused insulation content for Geo Insulation, https://geo-insulation.com/, in San Antonio, Texas. Fetch actual company pages for every business claim. Service area, prices, savings, warranties, rebates and capabilities must never be inferred from keywords. Current Basecamp briefs state residential-only and no cost-led content; resolve conflicting business claims from current approved evidence before drafting.
 
-Test channel: C0B02721MNK. Production channel C0BP597644B is identified but posting is disabled; Chase is the configured test reviewer. Wednesday 9 AM America/Los_Angeles replaces the prior Thursday schedule. Activation awaits destination confirmation and runtime readiness. Local listener stays disabled.
+Test channel: C0B02721MNK. Chase authorized production review delivery to C0BP597644B; Chase is the configured reviewer. Wednesday 9 AM America/Los_Angeles replaces the prior Thursday schedule. The destination is confirmed; activation awaits dedicated runtime credentials and full workflow verification. Local listener stays disabled.
 
 Only a named configured Slack approver can approve an exact commit for production_publish.py. Test approval is editorial only. Setup never publishes. Finished blogs require all structural/editor checks, labeled imagery, a checked preview and exact-commit quality results. Failures go only to the test channel.
 

@@ -1,21 +1,7 @@
-"""Weekly production review: one blog each Thursday in the production channel with a publish-on-approve card.
+"""Weekly production review of one finished blog, Wednesdays at 9 AM Pacific.
 
-Owner-confirmed cadence (September 25, 2026): Thursdays at 7 AM Pacific, starting
-September 30. Flow:
-
-1. ``weekly --test`` writes the next blog and posts its normal editorial card in the
-   test channel only. Approve there publishes nothing. The draft is staged in
-   ``weekly-next.json`` so Thursday shares the same reviewed version.
-2. ``weekly`` (the Thursday timer) shares the staged draft, or writes a fresh one if
-   none is staged or the staged one was rejected. It posts one parent message tagging
-   the client and the reviewer and the exact-version card in its thread, then arms
-   ``production_publish`` for that commit.
-3. An approval click is handled by ``production_review``/``production_publish``, which
-   merges, verifies live and completes the Basecamp task.
-
-``production-review.json`` holds one review at a time. A new week never replaces an
-open review (pending, queued, publishing, merged, needing inspection); it stops so a
-person can finish or resolve the previous blog first.
+Only a checked main-targeting PR is shared, with an exact-version approval card.
+Playground approval never publishes. Unfinished production reviews block new runs.
 """
 
 from __future__ import annotations
@@ -36,7 +22,7 @@ REUSABLE_DRAFT_STATES = {"ready", "pending", "approved"}
 
 
 def staged_path(settings: Settings) -> Path:
-    """The test-reviewed draft waiting for the next Thursday share."""
+    """The test-reviewed draft waiting for the next Wednesday share."""
     return settings.storage_dir / "weekly-next.json"
 
 
@@ -47,7 +33,7 @@ def stage_test(settings: Settings, store: Store) -> str | None:
         staged = json.loads(path.read_text())
         row = store.get(staged["draft_id"])
         if row and row["status"] in REUSABLE_DRAFT_STATES:
-            raise ValueError(f"Draft {staged['draft_id']} is already staged for Thursday")
+            raise ValueError(f"Draft {staged['draft_id']} is already staged for Wednesday")
     from .cli import run_daily
 
     # the reviewer's Basecamp notice waits for the real production share.
@@ -70,9 +56,12 @@ def open_review_state(settings: Settings) -> str | None:
 
 
 def run_weekly(settings: Settings, store: Store) -> str | None:
-    """Thursday entry point; single-run lock, never overlaps an open review."""
+    """Wednesday entry point; single-run lock, never overlaps an open review."""
     settings.require(
-        "production_delivery_enabled", "slack_production_channel_id", "slack_approver_ids"
+        "production_delivery_enabled",
+        "publishing_enabled",
+        "slack_production_channel_id",
+        "slack_approver_ids",
     )
     with (settings.storage_dir / "weekly.lock").open("a") as lock:
         try:
@@ -127,7 +116,10 @@ def share(settings: Settings, store: Store, draft_id: str) -> dict[str, Any]:
     from .slack_guard import safe_client
 
     settings.require(
-        "production_delivery_enabled", "slack_production_channel_id", "slack_approver_ids"
+        "production_delivery_enabled",
+        "publishing_enabled",
+        "slack_production_channel_id",
+        "slack_approver_ids",
     )
     folder = settings.storage_dir / draft_id
     receipt_path = folder / "weekly-share.json"
@@ -143,10 +135,9 @@ def share(settings: Settings, store: Store, draft_id: str) -> dict[str, Any]:
     commit = draft.get("preview_commit")
     if not (commit and draft.get("preview_url") and draft.get("pr_url")):
         raise ValueError("Weekly share requires a checked website preview")
-    # A finished blog has its real, privacy-cleared project photo (September 28, 2026: a
-    # photo-less draft was staged; only finished blogs may reach the client).
+    # Only finished illustrated articles may reach the client.
     if draft.get("media_status") != "ready" or not draft.get("media_provenance"):
-        raise ValueError("Weekly share requires an approved project photo; this draft has none")
+        raise ValueError("Weekly share requires an verified image; this draft has none")
     checkout = (folder / "website").resolve()
     if command(["git", "rev-parse", "HEAD"], checkout) != commit or command(
         ["git", "status", "--porcelain"], checkout
@@ -155,7 +146,13 @@ def share(settings: Settings, store: Store, draft_id: str) -> dict[str, Any]:
     require_ci_quality(checkout, commit)
     pr_number = int(str(draft["pr_url"]).rstrip("/").rsplit("/", 1)[1])
     pr = api(checkout, f"repos/{REPOSITORY}/pulls/{pr_number}")
-    if pr["head"]["sha"] != commit or pr.get("state") != "open":
+    if (
+        pr["head"]["sha"] != commit
+        or pr.get("state") != "open"
+        or pr.get("base", {}).get("ref") != "main"
+        or pr.get("base", {}).get("repo", {}).get("full_name") != REPOSITORY
+        or pr.get("head", {}).get("repo", {}).get("full_name") != REPOSITORY
+    ):
         raise ValueError("Website PR no longer matches the reviewed version")
     if pr.get("draft"):
         # The publisher merges only non-draft PRs; readiness is the owner's weekly consent.
