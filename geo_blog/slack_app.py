@@ -275,9 +275,7 @@ def review_blocks(draft: dict[str, Any], draft_id: str, *, settings: Settings | 
                 {
                     "type": "plain_text",
                     "text": (
-                        "Approve publishes this version to geo-insulation.com after final checks. I’ll confirm the live link here."
-                        if settings and settings.publishing_enabled
-                        else "Approve saves your decision. The blog will not be published automatically."
+                        "Approve saves your decision. Playground approval never publishes the blog."
                     ),
                 }
             ],
@@ -371,7 +369,7 @@ def serve(settings: Settings, store: Store, daily_job: Any = None) -> None:
             channel=channel,
             message_ts=body["message"]["ts"],
             allowed_users=settings.approvers,
-            publish=settings.publishing_enabled,
+            publish=False,
         )
         if not changed:
             client.chat_postEphemeral(
@@ -383,11 +381,7 @@ def serve(settings: Settings, store: Store, daily_job: Any = None) -> None:
             return
         text = f"Blog {decision} by <@{user}>."
         if decision == "approved":
-            text += (
-                " I’ll publish this version and confirm the live link here."
-                if settings.publishing_enabled
-                else " Saved as ready for publishing; website publishing is not connected."
-            )
+            text += " Editorial approval saved. Playground approval never publishes the blog."
         blocks = [b for b in body["message"].get("blocks", []) if b.get("type") != "actions"]
         blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": text}})
         client.chat_update(channel=channel, ts=body["message"]["ts"], text=text, blocks=blocks)
