@@ -2,7 +2,14 @@
 
 Writes from supplied Basecamp briefs, checks prose with an AI editor, attaches labeled OpenAI illustrations, and prepares Slack review. Intended publication uses an exact-version Slack approval, a website GitHub PR, verified Vercel publication and then Basecamp completion.
 
-**Setup is incomplete.** The dedicated Geo Slack listener is active on the droplet in the test channel; the weekly timer remains disabled. Dedicated Basecamp and GitHub credentials are verified from the droplet. The illustrated playground review and real approval button passed. The separate Astro website foundation is ready in PR #87; production publication is not yet enabled or verified. See SETUP-PROGRESS.md.
+**Weekly production reviews are enabled for Wednesday 9 AM Pacific in C0BP597644B.**
+The Geo droplet listener uses verified dedicated Basecamp and GitHub credentials.
+The full illustrated playground review and real approval button passed; playground approval never publishes.
+Website foundation PR #87 is deployed, and each new article still requires its own exact-version production Slack approval.
+The Basecamp brief queue is empty, so no new article can be produced yet.
+Upstream keyword access and the separate Airtable/Google worker remain outstanding.
+A real production article publication and subsequent Basecamp completion have not yet been exercised.
+See SETUP-PROGRESS.md.
 
 Agent repository: SFBAYKID/Geo-Insulation-Blog-Agent- (trailing hyphen). This is not the website repository. Website: https://geo-insulation.com/. Basecamp account 5395893, Geo project 40851698. The dedicated Geo Blog Briefs list (10378779880) currently has no open briefs; existing Content Sprint optimization tasks are not an authorized replacement for the weekly new-blog queue.
 

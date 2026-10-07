@@ -1,8 +1,13 @@
 # Geo Insulation blog agent setup
 
-Updated October 5, 2026. Test-channel listener deployed and connected on the droplet; full workflow setup remains incomplete.
-
-Current provider decision: OpenAI only for writing, editing, chat and imagery. Earlier Claude/Anthropic credential requirements below are superseded. Dedicated Slack app and droplet listener are installed and verified; full end-to-end test remains pending.
+Updated October 6, 2026.
+Weekly production review scheduling is enabled for Wednesday 09:00 America/Los_Angeles in C0BP597644B.
+The dedicated Geo listener, Basecamp authorization and GitHub token are active on the droplet.
+The illustrated playground test and Chase's real approval passed.
+Website foundation PR #87 is deployed; new articles still require their own exact-version production Slack approval.
+The Geo Blog Briefs queue is empty.
+Upstream keyword access and the separate Airtable/Google worker remain outstanding, and the first real production article/Basecamp completion has not yet been exercised.
+Historical entries below record earlier states; the final activation entry supersedes those states.
 
 ## Confirmed by Chase
 
@@ -255,3 +260,26 @@ Verified Basecamp project 40851698, dedicated list 10378779880 with zero open br
 Website preview, production delivery and publishing remain disabled.
 PR #87 remains a draft, unmerged, at exact head aaeb3c0fdca63b0c2524765a021ce680ec18af90.
 The requested approval to deploy that foundation is still pending; running the server installer is not approval to merge the website PR.
+
+
+## Production scheduling activated, October 6
+
+Chase explicitly approved deploying PR #87 and enabling Wednesday 9 AM Pacific production reviews.
+Merged the approved head aaeb3c0fdca63b0c2524765a021ce680ec18af90 normally into main, producing f695ec64cd5698723d4eb2475f5d6df78bc0a1f5.
+GitHub Deploy main run 37552708924 succeeded, and Production deployment 6898643888 reports success for that exact commit.
+Homepage and blog index return HTTP 200; the isolated practice article remains unpublished (HTTP 404).
+Fixed the playground handler so enabling production cannot queue publication from a test approval or promise publication on its test card.
+Added an actual-handler regression test with production enabled.
+All 353 tests pass locally and on the droplet; local Ruff lint/format, mypy and tools.check_project pass.
+Server runtime does not include Ruff; lint and type validation were completed locally against the same committed code.
+Deployed agent commit 5f5dac7 and enabled website previews, production delivery and publishing in the private Geo runtime configuration.
+Preserved a mode-0600 configuration backup and restarted only the geo-blog listener.
+Verified the new running process loaded all three flags and the dedicated GitHub token.
+Installed and read back only geo-blog's own crontab; the host is UTC and cron is active.
+The UTC Wednesday 16:00/17:00 entries use the Pacific gate for exactly one 09:00 run across daylight saving changes.
+The Geo systemd weekly timer stays disabled/inactive to prevent duplicate scheduling, and the Mac listener remains off.
+Production scheduler readiness reports no missing configuration.
+Verified no staged weekly draft, production review, publication plan or legacy publish job exists; the practice sample cannot be selected automatically.
+The active Basecamp queue read confirms zero open briefs.
+No production Slack message, paid draft, article publication or Basecamp completion was triggered during activation.
+The first scheduled start is Wednesday October 7 at 9 AM Pacific; a supplied brief is required before an article can be created.
