@@ -65,6 +65,22 @@ def test_thread_continues_without_mention_and_keeps_history(tmp_path):
     assert client.chat_postMessage.call_args.kwargs["thread_ts"] == "100.1"
 
 
+def test_plain_reply_under_an_agent_message_is_answered(tmp_path):
+    s, store, client = settings(tmp_path), Store(tmp_path), Mock()
+    reply = event(thread_ts="100.1", text="Where do I add it?", parent_user_id="U_BOT")
+    with patch.object(production_chat, "answer", return_value="In Basecamp.") as answer:
+        handle(s, store, reply, client, "U_BOT")
+        handle(
+            s,
+            store,
+            dict(reply, thread_ts="150.1", ts="300.1", parent_user_id="U_PERSON"),
+            client,
+            "U_BOT",
+        )
+    assert answer.call_count == 1
+    assert client.chat_postMessage.call_args.kwargs["thread_ts"] == "100.1"
+
+
 def test_model_failure_posts_safe_fallback(tmp_path):
     s, store, client = settings(tmp_path), Store(tmp_path), Mock()
     with patch.object(production_chat, "answer", side_effect=RuntimeError("down")):

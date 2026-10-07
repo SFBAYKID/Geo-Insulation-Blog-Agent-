@@ -143,7 +143,7 @@ def handle(
     *,
     model: Any = None,
 ) -> None:
-    """Reply once, in the thread, to a person who mentions the agent or continues its thread."""
+    """Reply once, in the thread, to a person who mentions the agent or replies under its message."""
     channel = settings.slack_production_channel_id
     if (
         not settings.production_chat_enabled
@@ -170,7 +170,9 @@ def handle(
             "SELECT 1 FROM blog_chat_events WHERE thread_key=? AND status='sent' LIMIT 1",
             (thread_key,),
         ).fetchone()
-        if f"<@{bot_user_id}>" not in text and not continuing:
+        # A reply under any message the agent posted counts as talking to it.
+        own_thread = event.get("thread_ts") and event.get("parent_user_id") == bot_user_id
+        if f"<@{bot_user_id}>" not in text and not continuing and not own_thread:
             return
         today = datetime.now(timezone.utc).date().isoformat()
         sent_today = db.execute(
