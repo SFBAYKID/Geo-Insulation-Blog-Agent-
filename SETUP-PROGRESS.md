@@ -294,5 +294,5 @@ Chase asked for the agent to converse with anyone who talks to it in the product
 Added production_chat.py: a tool-free, read-only reply grounded in the next run time, the live Basecamp task count, the last weekly attempt and any open review.
 It cannot approve, publish, edit, start runs or change Basecamp; the guard allows only a reply inside the one thread being answered.
 PRODUCTION_CHAT_ENABLED gates it, and replies are capped at 40 per day.
-The Slack app currently grants only app_mentions:read and chat:write, so people must mention the agent; plain thread replies need channel history scopes and message events.
+Chase added channels:history and groups:history with message.channels and message.groups events and reinstalled; the bot token is unchanged, so replies in a thread the agent has answered no longer need a mention.
 Chase also asked for a blank line after each sentence in every Slack message; sentence_lines now adds it while keeping quotes and list items tight.

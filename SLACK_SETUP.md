@@ -1,6 +1,6 @@
 # Geo Slack setup
 
-Create a dedicated Geo Insulation Blog Agent app from config/slack-manifest.json in the confirmed workspace. Bot scopes: app_mentions:read and chat:write. Subscribe to app_mention. Enable interactivity and Socket Mode; app token scope connections:write. Do not reuse another app's tokens.
+Create a dedicated Geo Insulation Blog Agent app from config/slack-manifest.json in the confirmed workspace. Bot scopes: app_mentions:read, chat:write, channels:history and groups:history. Subscribe to app_mention, message.channels and message.groups. Enable interactivity and Socket Mode; app token scope connections:write. Do not reuse another app's tokens.
 
 Store bot/app tokens, signing secret, app/team/client/bot IDs privately. Test channel is C0B02721MNK, monarch-bot-playground. Verify workspace and approver identities. Production channel remains unset, PRODUCTION_DELIVERY_ENABLED=false. Invite only to the test channel during setup; production membership requires Chase's explicit instruction.
 
