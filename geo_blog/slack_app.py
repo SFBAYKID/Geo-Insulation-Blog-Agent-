@@ -395,6 +395,11 @@ def serve(settings: Settings, store: Store, daily_job: Any = None) -> None:
 
         if handle_comment(settings, event, client):
             return
+        if event.get("channel") == settings.slack_production_channel_id:
+            from .production_chat import handle as production_chat
+
+            production_chat(settings, store, event, client, identity["user_id"])
+            return
         client = safe_client(settings, client)
         if not maybe_draft(settings, store, event, client, identity["user_id"]):
             handle(settings, store, event, client, identity["user_id"])

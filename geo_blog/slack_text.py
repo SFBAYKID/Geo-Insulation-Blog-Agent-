@@ -50,16 +50,41 @@ _ABBREVIATIONS = frozenset(
 )
 
 
-def sentence_lines(text: str) -> str:
-    """Put each sentence of a Slack message on its own line, like a text message.
+# A line that ends a sentence, and lines that keep tight spacing (quotes, list items).
+_SENTENCE_END = re.compile(r"[.!?][)\"'’”]*$")
+_TIGHT = re.compile(r"^\s*(?:>|[-•]\s|\*\s|\d+[.)]\s)")
 
-    Reviewers asked for this house style on October 1, 2026: no paragraph
-    blocks. Code, links, mentions and formatted spans stay intact, and a
-    continuation inside a "> " quote keeps the quote marker.
+
+def sentence_lines(text: str) -> str:
+    """Put each sentence of a Slack message on its own line, with a blank line between.
+
+    Reviewers asked for one sentence per line on October 1, 2026, and Chase asked
+    on October 7 for a blank line after each sentence. Code, links, mentions and
+    formatted spans stay intact; quotes and list items keep single line breaks.
     """
     parts = _CODE_BLOCK.split(text)
     # Odd indexes are fenced code blocks, which pass through untouched.
-    return "".join(part if index % 2 else _format_lines(part) for index, part in enumerate(parts))
+    return "".join(
+        part if index % 2 else _space_sentences(_format_lines(part))
+        for index, part in enumerate(parts)
+    )
+
+
+def _space_sentences(text: str) -> str:
+    """Leave one blank line after each sentence-ending line before more prose."""
+    lines = text.split("\n")
+    out: list[str] = []
+    for index, line in enumerate(lines):
+        out.append(line)
+        following = lines[index + 1] if index + 1 < len(lines) else ""
+        if (
+            following.strip()
+            and _SENTENCE_END.search(line.rstrip())
+            and not _TIGHT.match(line)
+            and not _TIGHT.match(following)
+        ):
+            out.append("")
+    return "\n".join(out)
 
 
 def _format_lines(text: str) -> str:

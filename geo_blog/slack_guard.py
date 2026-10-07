@@ -32,8 +32,10 @@ class ChannelClient:
         *,
         production_share: bool = False,
         production_review_message_ts: str = "",
+        production_thread: str = "",
     ) -> None:
         self.settings = settings
+        self.production_thread = production_thread
         self.client = client
         self.production_review_message_ts = production_review_message_ts
         self.production_share = production_share
@@ -45,10 +47,16 @@ class ChannelClient:
     def _send(self, method: str, kwargs: dict[str, Any]) -> Any:
         # Explicit owner-approved review sharing can post to the production channel.
         # Production review updates additionally require the exact saved message ID.
-        # Normal test workflows never enable either explicit capability.
+        # Production chat may reply only inside its one named thread.
+        # Normal test workflows never enable any explicit capability.
         if not (
             (
                 (self.production_share and method == "chat_postMessage")
+                or (
+                    self.production_thread
+                    and method == "chat_postMessage"
+                    and kwargs.get("thread_ts") == self.production_thread
+                )
                 or (
                     self.production_review_message_ts
                     and method == "chat_update"
@@ -121,6 +129,7 @@ def safe_client(
     *,
     production_share: bool = False,
     production_review_message_ts: str = "",
+    production_thread: str = "",
 ) -> ChannelClient:
     """Wrap injected clients too, so workers and tests exercise the same boundary."""
     if isinstance(client, ChannelClient):
@@ -130,4 +139,5 @@ def safe_client(
         client or WebClient(token=settings.slack_bot_token.get_secret_value()),
         production_share=production_share,
         production_review_message_ts=production_review_message_ts,
+        production_thread=production_thread,
     )

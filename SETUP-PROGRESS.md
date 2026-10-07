@@ -283,3 +283,16 @@ Verified no staged weekly draft, production review, publication plan or legacy p
 The active Basecamp queue read confirms zero open briefs.
 No production Slack message, paid draft, article publication or Basecamp completion was triggered during activation.
 The first scheduled start is Wednesday October 7 at 9 AM Pacific; a supplied brief is required before an article can be created.
+
+
+## First weekly run and production chat, October 7
+
+The 9 AM Pacific production run started on schedule and stopped safely because the Basecamp Geo blog list had zero open tasks.
+No reservation, paid draft, production post or Basecamp change occurred.
+At Chase's request, the agent tagged Carmen in the production channel asking for a blog task.
+Chase asked for the agent to converse with anyone who talks to it in the production channel.
+Added production_chat.py: a tool-free, read-only reply grounded in the next run time, the live Basecamp task count, the last weekly attempt and any open review.
+It cannot approve, publish, edit, start runs or change Basecamp; the guard allows only a reply inside the one thread being answered.
+PRODUCTION_CHAT_ENABLED gates it, and replies are capped at 40 per day.
+The Slack app currently grants only app_mentions:read and chat:write, so people must mention the agent; plain thread replies need channel history scopes and message events.
+Chase also asked for a blank line after each sentence in every Slack message; sentence_lines now adds it while keeping quotes and list items tight.

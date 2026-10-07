@@ -64,6 +64,7 @@ class Settings(BaseSettings):
     publishing_enabled: bool = False
     website_production_branch: str = "main"
     revisions_enabled: bool = False
+    production_chat_enabled: bool = False
     daily_enabled: bool = False
     daily_hour: int = Field(default=21, ge=0, le=23)
     timezone: str = "America/Los_Angeles"
