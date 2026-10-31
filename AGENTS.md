@@ -16,6 +16,8 @@ Use only Geo company evidence, names, routes, imagery and runtime state. No othe
 
 Use supplied Basecamp briefs and upstream keywords. Keyword content is read-only in the blog agent. A separately configured keyword worker may synchronize source-owned fields only, with conflict checks and write receipts. Never mark a service page published because a related blog is published.
 
+Chase approved the Geo research handoff on October 31, 2026. In research queue mode, consume only exact Proposed rows from Blog Posts, keep Existing Coverage read-only, and fall back to the authorized Basecamp list only after successful research reads. Lifecycle-only writes are authorized: Status, Claimed at, Review notes, Published URL, Published date, and duplicate Hold reason. Never alter keywords, approve Held rows, change schema, or consume Local Pages. See RESEARCH-HANDOFF.md for the current contract; older pending-Airtable notes are historical.
+
 Only finished drafts passing structural and AI editor checks may reach the client. Every blog needs an image. Chase chose OpenAI illustrations; label them Illustration:, never portray generated scenes as customer work. Any future real photos require owner permission, privacy review, metadata removal and integrity checks.
 
 Shared droplet writes are limited to geo-blog and geo-keyword-sync resources. Never change other users, services, host firewall, swap or shared software. No website builds or Chrome there; use exact-commit remote checks. Keep the Mac listener off and weekly timer disabled until end-to-end test success.

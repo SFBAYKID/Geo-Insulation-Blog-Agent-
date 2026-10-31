@@ -251,6 +251,9 @@ def private_alert(settings: Settings, text: str) -> None:
 
 def run_weekly_notifying(settings: Settings, store: Store) -> str | None:
     """Timer entry point: any failure is reported privately, then re-raised for systemd."""
+    from .research_queue_monitor import check_queue
+
+    check_queue(settings)
     try:
         return run_weekly(settings, store)
     except Exception as exc:
@@ -259,3 +262,5 @@ def run_weekly_notifying(settings: Settings, store: Store) -> str | None:
         except Exception as notice_error:
             logging.error("Could not send weekly failure notice: %s", type(notice_error).__name__)
         raise
+    finally:
+        check_queue(settings)

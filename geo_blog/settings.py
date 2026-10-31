@@ -53,6 +53,8 @@ class Settings(BaseSettings):
     basecamp_draft_ready_enabled: bool = False
     airtable_write_enabled: bool = False
     queue_low_threshold: int = Field(default=5, ge=1)
+    research_queue_monitor_enabled: bool = False
+    research_queue_low_threshold: int = Field(default=2, ge=1)
     pagespeed_api_key: SecretStr = SecretStr("")
     vercel_automation_bypass_secret: SecretStr = SecretStr("")
     website_source: Path = Path("website-checkout")
@@ -85,10 +87,10 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def enforce_test_boundary(self) -> Self:
         """Keep ordinary Slack operations isolated and require explicit publication setup."""
-        if self.blog_queue_source not in {"airtable", "basecamp"}:
+        if self.blog_queue_source not in {"airtable", "basecamp", "research"}:
             raise ValueError("Unknown blog queue source")
         if self.basecamp_draft_ready_enabled and (
-            self.blog_queue_source != "basecamp"
+            self.blog_queue_source not in {"basecamp", "research"}
             or not self.basecamp_reviewer_id
             or not self.website_preview_enabled
         ):

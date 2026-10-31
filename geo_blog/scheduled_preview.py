@@ -48,7 +48,7 @@ def readiness(settings: Settings, *, production: bool = False) -> list[str]:
             settings.require(name)
         except ValueError:
             missing.append(name)
-    fields = (
+    fields: tuple[str, ...] = (
         (
             "basecamp_client_id",
             "basecamp_client_secret",
@@ -57,9 +57,11 @@ def readiness(settings: Settings, *, production: bool = False) -> list[str]:
             "basecamp_project_id",
             "basecamp_todolist_id",
         )
-        if settings.blog_queue_source == "basecamp"
+        if settings.blog_queue_source in {"basecamp", "research"}
         else ("airtable_token", "airtable_base_id")
     )
+    if settings.blog_queue_source == "research":
+        fields += ("airtable_token", "airtable_base_id", "airtable_write_enabled")
     for name in fields:
         try:
             settings.require(name)

@@ -96,6 +96,10 @@ def select_topic(
     settings: Settings, used: set[str], client: Any = None, record_id: Any = None
 ) -> Any:
     """Read user-entered keywords; never perform keyword/volume research."""
+    if settings.blog_queue_source == "research":
+        from .research_queue import select_research
+
+        return select_research(settings, used, record_id)
     if settings.blog_queue_source == "basecamp":
         from .basecamp_queue import select_basecamp_topic
 

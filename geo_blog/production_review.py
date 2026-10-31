@@ -75,6 +75,18 @@ def handle_review(settings: Settings, body: dict[str, Any], raw_client: Any) -> 
             approved_comments_digest=comments_digest(saved),
         )
         path.write_text(json.dumps(saved, indent=2))
+        if decision == "rejected":
+            from .research_lifecycle import record_decision
+            from .store import Store
+
+            row = Store(settings.storage_dir).get(saved["draft_id"])
+            if row and row.get("payload"):
+                record_decision(
+                    settings,
+                    json.loads(row["payload"]),
+                    "Rejected",
+                    note=f"Rejected by configured reviewer {user}; see the saved production review and feedback.",
+                )
         blocks = [b for b in saved["blocks"] if b["type"] != "actions"]
         text = f"Review {'approved for publication' if decision == 'approved' else 'returned for changes'} by <@{user}>."
         text += (

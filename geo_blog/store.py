@@ -74,7 +74,9 @@ class Store:
         """Return all reserved source IDs, including variants in saved groups."""
         with self.db() as db:
             used = set()
-            for row in db.execute("SELECT topic_key,payload FROM drafts"):
+            for row in db.execute(
+                "SELECT topic_key,payload FROM drafts WHERE status != 'failed_requeued'"
+            ):
                 used.add(row[0])
                 if row[1]:
                     used.update(json.loads(row[1]).get("topic", {}).get("source_record_ids", []))

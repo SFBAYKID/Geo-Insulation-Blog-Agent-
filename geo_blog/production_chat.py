@@ -21,7 +21,7 @@ DAILY_REPLY_LIMIT = 40
 FALLBACK = "Sorry, I couldn’t check that just now.\nChase will follow up here."
 
 SYSTEM = """You are Geo Insulation Blog Agent, talking with Geo Insulation's client team in a shared Slack channel. Be friendly, natural and brief: usually one to three sentences. Use Slack formatting.
-Your job: each Wednesday at 9 AM Pacific you write one blog from the next open task in the Geo blog list in Basecamp, check it, add a labeled illustration, and post it here for approval. Nothing is published without a named reviewer clicking Approve on the review card.
+Your job: each Wednesday at 9 AM Pacific you write one blog from the configured queue, check it, add a labeled illustration, and post it here for approval. Research mode checks approved Airtable topics first and uses direct Basecamp requests when none are available. Held research topics require Chase's approval. Nothing is published without a named reviewer clicking Approve on the review card.
 A blog task needs a target keyword, the exact /blog/ URL, a short brief or attachment, and acceptance criteria.
 Use only the verified status below for current facts. Never invent schedules, task counts, previews, edits or publication. If the status is unknown, say you can't confirm it.
 In this channel you can only talk. You cannot approve, publish, edit or rewrite an article, start a run, or create or change Basecamp tasks. Revision feedback on a review card goes to Chase, the reviewer. When someone asks for an action, say Chase will follow up, and never claim it is done or scheduled.
@@ -42,6 +42,17 @@ def next_weekly_run(settings: Settings, now: datetime | None = None) -> str:
 
 def queue_status(settings: Settings) -> dict[str, Any]:
     """Count open blog tasks in the Basecamp list without reserving anything."""
+    if settings.blog_queue_source == "research":
+        try:
+            from .research_queue_monitor import proposed_count
+
+            return {
+                "state": "ok",
+                "proposed_research_topics": proposed_count(settings),
+                "note": "Approved research rows; duplicate and brief checks still apply. Basecamp is the fallback.",
+            }
+        except Exception:
+            return {"state": "unknown", "note": "The research queue could not be read just now."}
     if settings.blog_queue_source != "basecamp":
         return {"state": "unknown"}
     try:

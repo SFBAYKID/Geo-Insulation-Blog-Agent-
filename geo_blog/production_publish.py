@@ -218,6 +218,9 @@ def run_once(settings: Settings) -> bool:
         from .store import Store
 
         draft.update(live_url=url, production_commit=sha)
+        from .research_lifecycle import record_decision
+
+        record_decision(settings, draft, "Published", url=url)
         with Store(settings.storage_dir).db() as db:
             db.execute(
                 "UPDATE drafts SET status='published',payload=? WHERE id=?",

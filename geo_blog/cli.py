@@ -26,6 +26,33 @@ def run_daily(
     parent_thread: Any = None,
     request_key: Any = None,
 ) -> Any:
+    """Serialize research drafting across schedule, command, and request processes."""
+    import fcntl
+
+    options = dict(
+        send=send,
+        topic=topic,
+        practice=practice,
+        parent_thread=parent_thread,
+        request_key=request_key,
+    )
+    if settings.blog_queue_source != "research":
+        return _run_daily(settings, store, **options)
+    with (settings.storage_dir / "research-draft.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        return _run_daily(settings, store, **options)
+
+
+def _run_daily(
+    settings: Settings,
+    store: Store,
+    *,
+    send: bool = False,
+    topic: dict[str, Any] | None = None,
+    practice: bool = False,
+    parent_thread: Any = None,
+    request_key: Any = None,
+) -> Any:
     """Reserve a draft, retain its evidence, and optionally deliver it in the saved thread."""
     from .content import Writer
 
@@ -34,7 +61,12 @@ def run_daily(
         settings.require("slack_bot_token", "slack_approver_ids")
     day = datetime.now(ZoneInfo(settings.timezone)).date().isoformat()
     try:
-        topic = topic or select_topic(settings, store.used_topics())
+        if not topic and settings.blog_queue_source == "research":
+            from .research_queue import select_research
+
+            topic = select_research(settings, store.used_topics(), hold_duplicates=True)
+        else:
+            topic = topic or select_topic(settings, store.used_topics())
     except Exception as exc:
         if send:
             from .slack_app import queue_notice
@@ -87,6 +119,11 @@ def run_daily(
     folder.mkdir(parents=True, exist_ok=True)
     (folder / "topic.json").write_text(json.dumps(topic, indent=2))
     try:
+        from .research_lifecycle import claim, transition
+
+        claim(settings, topic, draft_id)
+        (folder / "topic.json").write_text(json.dumps(topic, indent=2))
+        transition(settings, topic, "Drafting")
         if parent_thread:
             store.set_thread(draft_id, settings.slack_channel_id, parent_thread)
         if send:
@@ -125,6 +162,20 @@ def run_daily(
         store.save(draft_id, draft)
     except Exception as exc:
         store.fail(draft_id, type(exc).__name__)
+        if topic.get("research_claimed_at"):
+            try:
+                from .research_lifecycle import transition
+
+                transition(
+                    settings,
+                    topic,
+                    "Proposed",
+                    note=f"Draft stopped ({type(exc).__name__}); returned for a later attempt.",
+                )
+                with store.db() as db:
+                    db.execute("UPDATE drafts SET status='failed_requeued' WHERE id=?", (draft_id,))
+            except Exception as recovery_error:
+                logging.error("Research reset needs inspection: %s", type(recovery_error).__name__)
         row = store.required(draft_id)
         if send and row.get("thread_ts"):
             try:
@@ -140,6 +191,9 @@ def run_daily(
                     type(notice_error).__name__,
                 )
         raise
+    from .research_lifecycle import transition
+
+    transition(settings, topic, "Review")
     if send:
         from .slack_app import deliver
 
