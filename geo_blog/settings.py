@@ -64,6 +64,7 @@ class Settings(BaseSettings):
     website_base_branch: str = "main"
     production_delivery_enabled: bool = False
     publishing_enabled: bool = False
+    production_auto_publish_enabled: bool = False
     website_production_branch: str = "main"
     revisions_enabled: bool = False
     production_chat_enabled: bool = False

@@ -68,6 +68,18 @@ class ChannelClient:
             and kwargs.get("channel") == self.settings.slack_production_channel_id
         ):
             require_test_channel(self.settings, kwargs.get("channel", ""))
+        if (
+            self.settings.production_auto_publish_enabled
+            and kwargs.get("channel") == self.settings.slack_production_channel_id
+            and method == "chat_postMessage"
+            and self.production_share
+        ):
+            from .publication_delivery import OutsideAnnouncementWindow, business_hours
+
+            if not business_hours():
+                raise OutsideAnnouncementWindow(
+                    "Production announcements wait for weekday 9–5 Central"
+                )
         # Suppress Slack-wide notifications even if user/model content contains them.
         import re
 

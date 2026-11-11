@@ -17,7 +17,7 @@ from .settings import Settings
 from .store import Store
 
 CHASE = "U01DPJVURHU"
-CLOSED_REVIEW_STATES = {"published", "rejected"}
+CLOSED_REVIEW_STATES = {"published", "rejected", "unpublished"}
 REUSABLE_DRAFT_STATES = {"ready", "pending", "approved"}
 
 
@@ -158,6 +158,15 @@ def share(settings: Settings, store: Store, draft_id: str) -> dict[str, Any]:
         # The publisher merges only non-draft PRs; readiness is the owner's weekly consent.
         command(["gh", "pr", "ready", str(pr_number)], checkout)
     base_sha = api(checkout, f"repos/{REPOSITORY}/git/ref/heads/main")["object"]["sha"]
+    if settings.production_auto_publish_enabled:
+        from .automatic_publication import arm
+
+        receipt = arm(settings, draft_id, commit, base_sha, pr_number)
+        receipt_path.write_text(json.dumps(receipt, indent=2))
+        staged = staged_path(settings)
+        if staged.exists() and json.loads(staged.read_text()).get("draft_id") == draft_id:
+            staged.unlink()
+        return receipt
     if settings.basecamp_draft_ready_enabled:
         try:
             from .basecamp_review import draft_ready

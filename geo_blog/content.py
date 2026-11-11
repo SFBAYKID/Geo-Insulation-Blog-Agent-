@@ -20,6 +20,7 @@ from .models import StructureCheck, StructureReport
 from .openai_client import make_client
 from .site_faq import extract_faq
 from .text_format import count_keyword_in_text
+from .writer_feedback import secondary_fits_title, structure_feedback
 
 PROMPTS = Path(__file__).parent / "prompts"
 WRITER_ATTEMPTS = 7
@@ -168,6 +169,8 @@ def validate(
             ("title", fm["title"]),
             ("description", fm["description"]),
         ]:
+            if label == "title" and not secondary_fits_title(keyword, secondary_keyword):
+                continue
             check(
                 "secondary_" + label,
                 count_keyword_in_text(value, secondary_keyword) > 0,
@@ -692,9 +695,8 @@ class Writer:
                     # Showing only the failures let each attempt break a rule the last one had
                     # just satisfied, so the description oscillated between its length and its
                     # required phrase (September 21, 2026). Send the whole scorecard.
-                    feedback = (
-                        "Fix every check marked failed without breaking any check marked passed.\n"
-                        + json.dumps(report.summary["checks"])
+                    feedback = structure_feedback(
+                        report.summary, fm, topic["keyword"], topic.get("secondary_keyword", "")
                     )
                     continue
                 verdict = editorial_review(
@@ -733,5 +735,7 @@ class Writer:
                     + " Return corrected edits for the same findings above."
                 )
         raise ValueError(
-            f"Draft failed quality review after {WRITER_ATTEMPTS} attempts; inspect saved artifacts"
+            f"Draft failed quality review after {WRITER_ATTEMPTS} attempts; "
+            + (problem.strip() if problem else feedback)[:1200]
+            + "; inspect saved artifacts"
         )

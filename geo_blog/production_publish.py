@@ -39,16 +39,27 @@ def locked_review(settings: Settings) -> Iterator[tuple[Path, dict[str, Any]]]:
 
 
 def validate_approval(
-    review: dict[str, Any], plan: dict[str, Any], approvers: set[str] | None = None
+    review: dict[str, Any],
+    plan: dict[str, Any],
+    approvers: set[str] | None = None,
+    *,
+    automatic: bool = False,
 ) -> None:
     """Reject stale approvals before any GitHub mutation."""
 
+    from .automatic_publication import POLICY
+
+    automatic_authorized = (
+        automatic
+        and review.get("publication_policy") == POLICY
+        and plan.get("publication_policy") == POLICY
+    )
     if (
         not plan.get("armed")
         or review.get("state") not in {"queued", "publishing"}
         or review.get("draft_id") != plan["draft_id"]
         or review.get("preview_commit") != plan["head_sha"]
-        or review.get("reviewer") not in (approvers or set())
+        or (not automatic_authorized and review.get("reviewer") not in (approvers or set()))
         or review.get("approved_comments_digest") != comments_digest(review)
     ):
         raise ValueError(
@@ -79,6 +90,11 @@ def api(checkout: Path, endpoint: str, *args: str) -> Any:
 
 def update_card(settings: Settings, review: dict[str, Any], text: str) -> None:
     """Update the one threaded review card; never duplicate preview links or broadcast."""
+    if not review.get("message_ts"):
+        from .weekly import private_alert
+
+        private_alert(settings, text)
+        return
     blocks = [b for b in review["blocks"] if b["type"] != "actions"]
     blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": text}})
     safe_client(settings, production_review_message_ts=review["message_ts"]).chat_update(
@@ -146,7 +162,7 @@ def record_basecamp(settings: Settings, draft: dict[str, Any], url: str) -> None
         path.write_text(json.dumps(review, indent=2))
 
 
-def run_once(settings: Settings) -> bool:
+def _run_once(settings: Settings) -> bool:
     """Resume durable approved work; never replay an uncertain merge without reconciling it."""
     if not settings.production_delivery_enabled or not settings.publishing_enabled:
         return False
@@ -159,7 +175,12 @@ def run_once(settings: Settings) -> bool:
             return False
         if review["state"] != "merged":
             try:
-                validate_approval(review, plan, settings.approvers)
+                validate_approval(
+                    review,
+                    plan,
+                    settings.approvers,
+                    automatic=settings.production_auto_publish_enabled,
+                )
             except ValueError:
                 review.update(
                     state="publication_needs_inspection", publication_error="StaleApproval"
@@ -190,7 +211,12 @@ def run_once(settings: Settings) -> bool:
             main_sha = api(checkout, f"repos/{REPOSITORY}/git/ref/heads/main")["object"]["sha"]
             validate_pr(pr, plan, main_sha)
             with locked_review(settings) as (path, review):
-                validate_approval(review, plan, settings.approvers)
+                validate_approval(
+                    review,
+                    plan,
+                    settings.approvers,
+                    automatic=settings.production_auto_publish_enabled,
+                )
                 # GitHub also enforces branch protections and the expected head SHA.
                 merged = api(
                     checkout,
@@ -226,13 +252,20 @@ def run_once(settings: Settings) -> bool:
                 "UPDATE drafts SET status='published',payload=? WHERE id=?",
                 (json.dumps(draft), plan["draft_id"]),
             )
-        update_card(
-            settings,
-            review,
-            f"Published and verified: <{url}|Read the live blog>. Approved by <@{review['reviewer']}>.",
-        )
+        if settings.production_auto_publish_enabled:
+            from .publication_delivery import save_publication
+
+            save_publication(settings, review, draft)
+        else:
+            update_card(
+                settings,
+                review,
+                f"Published and verified: <{url}|Read the live blog>. Approved by <@{review['reviewer']}>.",
+            )
         with locked_review(settings) as (path, review):
-            review["notification_state"] = "sent"
+            review["notification_state"] = (
+                "queued" if settings.production_auto_publish_enabled else "sent"
+            )
             path.write_text(json.dumps(review, indent=2))
         record_basecamp(settings, draft, url)
     except Exception as exc:
@@ -250,9 +283,37 @@ def run_once(settings: Settings) -> bool:
         update_card(
             settings,
             review,
-            "Approval is saved, but publication could not be completed and verified. It needs inspection before retrying; I have not confirmed the article live.",
+            "Publication could not be completed and verified. The agent needs to inspect it before retrying; the article is not confirmed live.",
         )
     return True
+
+
+def run_once(settings: Settings) -> bool:
+    """Serialize publishing, deferred announcements and explicit Undo requests."""
+    settings.storage_dir.mkdir(parents=True, exist_ok=True)
+    with (settings.storage_dir / "publication-worker.lock").open("a") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return False
+        worked = _run_once(settings)
+        if (
+            settings.production_auto_publish_enabled
+            and settings.publishing_enabled
+            and settings.production_delivery_enabled
+        ):
+            from .publication_delivery import deliver_pending, save_publication
+            from .publication_undo import run_pending
+
+            current_path = settings.storage_dir / "production-review.json"
+            if current_path.exists():
+                current = json.loads(current_path.read_text())
+                if current.get("state") == "published":
+                    payload = settings.storage_dir / current["draft_id"] / "payload.json"
+                    save_publication(settings, current, json.loads(payload.read_text()))
+            run_pending(settings)
+            deliver_pending(settings)
+        return worked
 
 
 def start_worker(settings: Settings, stop: threading.Event) -> threading.Thread:
