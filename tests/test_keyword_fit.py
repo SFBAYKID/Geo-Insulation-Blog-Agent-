@@ -157,7 +157,11 @@ def message(text):
     )
 
 
-def test_exhausted_writer_raises_only_the_checks_still_failing(tmp_path, valid_article):
+def test_exhausted_writer_raises_only_the_checks_still_failing(
+    tmp_path, valid_article, monkeypatch
+):
+    # Exercise the correction loop itself; metadata options are tested separately.
+    monkeypatch.setattr("geo_blog.content.repair_metadata", lambda *a, **k: None)
     broken = valid_article.replace("AI workflow automation: choose the first job", "X" * 59)
     writer = Writer(Settings(_env_file=None, writer_patch_corrections=False), client=Mock())
     writer.call = Mock(return_value=message(broken))

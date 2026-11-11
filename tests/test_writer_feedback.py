@@ -30,7 +30,11 @@ def test_long_pair_title_exception_preserves_other_secondary_checks(valid_articl
     }
 
 
-def test_retry_receives_measured_values_and_still_requires_editor(tmp_path, valid_article):
+def test_retry_receives_measured_values_and_still_requires_editor(
+    tmp_path, valid_article, monkeypatch
+):
+    # Exercise the correction loop itself; metadata options are tested separately.
+    monkeypatch.setattr("geo_blog.content.repair_metadata", lambda *a, **k: None)
     urls = {
         "https://geo-insulation.com/",
         "https://example.com/docs",

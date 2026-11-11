@@ -15,6 +15,7 @@ import yaml
 
 from .editor_notes import required_notes, rereview_request
 from .evidence import selected_packet, source_context
+from .metadata_options import repair_metadata
 from .model_usage import cached_text, fingerprint, record_usage, stable_tools
 from .models import StructureCheck, StructureReport
 from .openai_client import make_client
@@ -700,6 +701,25 @@ class Writer:
                     )
                     blockers = ["Selected product link missing"]
                     continue
+                if not report.passed and (
+                    repaired := repair_metadata(
+                        self,
+                        validate,
+                        text,
+                        topic,
+                        urls,
+                        report.summary,
+                        context,
+                        output_dir,
+                        attempt,
+                    )
+                ):
+                    # Only title/description failed; a measured option passed every check.
+                    text, (fm, body, report) = repaired
+                    (output_dir / "latest-draft.md").write_text(text)
+                    validate_basecamp_draft(
+                        {"topic": topic, "front_matter": fm, "report": report.summary}
+                    )
                 if not report.passed:
                     blockers = [describe_check(c) for c in failed_checks(report.summary)]
                     # Showing only the failures let each attempt break a rule the last one had
