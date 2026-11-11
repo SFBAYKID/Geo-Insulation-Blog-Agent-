@@ -192,6 +192,32 @@ def select_research(
             topic = dict(topic_from_record(adapted))
             if not topic.get("secondary_keyword"):
                 raise ValueError("Proposed topic needs a usable first supporting keyword")
+            # Hold a topic no draft can pass before spending model calls on it, and
+            # move on to the next Proposed row in the same run.
+            from .quality_failures import (
+                MAX_QUALITY_FAILURES,
+                failure_count,
+                hold_reason,
+                last_blockers,
+            )
+            from .writer_feedback import topic_blockers
+
+            reason = ""
+            if blockers := topic_blockers(topic["keyword"]):
+                reason = (
+                    " ".join(blockers)
+                    + " Shorten the primary keyword, then set Status back to Proposed."
+                )
+            # Re-proposed unchanged after repeated failures (by a person or the research
+            # agent's sync): it would fail the same way, so hold it again for free.
+            elif (failures := failure_count(settings, row["id"], fields)) >= MAX_QUALITY_FAILURES:
+                reason = hold_reason(topic, failures, last_blockers(settings, row["id"], fields))
+            if reason:
+                if hold_duplicates:
+                    current = api.get(row["id"])
+                    if current["fields"] == row["fields"]:
+                        api.patch(row["id"], {"Status": "Held", "Hold reason": reason})
+                continue
             topic.update(
                 research_record_id=row["id"],
                 research_source_fields=fields,

@@ -19,8 +19,14 @@ from .model_usage import cached_text, fingerprint, record_usage, stable_tools
 from .models import StructureCheck, StructureReport
 from .openai_client import make_client
 from .site_faq import extract_faq
-from .text_format import count_keyword_in_text
-from .writer_feedback import secondary_fits_title, structure_feedback
+from .text_format import count_keyword_in_text, same_phrase
+from .writer_feedback import (
+    DraftQualityError,
+    describe_check,
+    failed_checks,
+    secondary_required_in,
+    structure_feedback,
+)
 
 PROMPTS = Path(__file__).parent / "prompts"
 WRITER_ATTEMPTS = 7
@@ -169,7 +175,8 @@ def validate(
             ("title", fm["title"]),
             ("description", fm["description"]),
         ]:
-            if label == "title" and not secondary_fits_title(keyword, secondary_keyword):
+            # A pair that cannot fit the field's limit is waived there (writer_feedback).
+            if not secondary_required_in(label, keyword, secondary_keyword):
                 continue
             check(
                 "secondary_" + label,
@@ -214,7 +221,7 @@ def validate(
         )
     check(
         "keyword_metadata",
-        fm["keywords"][0].casefold() == keyword.casefold(),
+        same_phrase(str(fm["keywords"][0]), keyword),
         "Primary keyword first",
     )
     if secondary_keyword:
@@ -225,7 +232,7 @@ def validate(
         )
         check(
             "secondary_metadata",
-            secondary_keyword.casefold() in [k.casefold() for k in fm["keywords"][1:]],
+            any(same_phrase(str(k), secondary_keyword) for k in fm["keywords"][1:]),
             f'Include "{secondary_keyword}" in keywords metadata',
             fm["keywords"],
         )
@@ -618,6 +625,7 @@ class Writer:
         # The stricter Sonnet 5 editor needed more than five (September 28, 2026).
         # Notes from the last editor pass; later passes check these instead of starting over.
         prior_notes: list[str] = []
+        blockers: list[str] = []
         for attempt in range(WRITER_ATTEMPTS):
             repairing = False
             if text and self.s.writer_patch_corrections:
@@ -690,8 +698,10 @@ class Writer:
                         "Include the selected product with a specific, factual connection and its verified URL: "
                         + json.dumps(product)
                     )
+                    blockers = ["Selected product link missing"]
                     continue
                 if not report.passed:
+                    blockers = [describe_check(c) for c in failed_checks(report.summary)]
                     # Showing only the failures let each attempt break a rule the last one had
                     # just satisfied, so the description oscillated between its length and its
                     # required phrase (September 21, 2026). Send the whole scorecard.
@@ -726,6 +736,7 @@ class Writer:
                     return draft
                 feedback = json.dumps(verdict)
                 prior_notes = [str(n) for n in verdict.get("notes", [])]
+                blockers = ["Editor: " + n[:200] for n in prior_notes] or ["Editor did not approve"]
             except (ValueError, TypeError, AttributeError, KeyError) as exc:
                 # The draft still needs the same corrections. Say only what was wrong with the
                 # reply itself, instead of replacing the findings with a mechanical error.
@@ -734,8 +745,8 @@ class Writer:
                     + str(exc)
                     + " Return corrected edits for the same findings above."
                 )
-        raise ValueError(
-            f"Draft failed quality review after {WRITER_ATTEMPTS} attempts; "
-            + (problem.strip() if problem else feedback)[:1200]
-            + "; inspect saved artifacts"
-        )
+                # Keep the last real findings too; a broken reply does not erase them.
+                blockers = [b for b in blockers if not b.startswith("Reply could not")] + [
+                    "Reply could not be applied: " + str(exc)[:200]
+                ]
+        raise DraftQualityError(topic["keyword"], WRITER_ATTEMPTS, blockers)

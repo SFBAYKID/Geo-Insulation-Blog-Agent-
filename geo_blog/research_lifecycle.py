@@ -44,7 +44,13 @@ def claim(settings: Settings, topic: dict[str, Any], draft_id: str) -> None:
 
 
 def transition(
-    settings: Settings, topic: dict[str, Any], status: str, *, note: str = "", url: str = ""
+    settings: Settings,
+    topic: dict[str, Any],
+    status: str,
+    *,
+    note: str = "",
+    url: str = "",
+    hold_reason: str = "",
 ) -> None:
     """Only transition this run's own claim; never reset published or human-held rows."""
     record = topic.get("research_record_id")
@@ -54,9 +60,13 @@ def transition(
         "Drafting": {"Claimed"},
         "Review": {"Drafting"},
         "Proposed": {"Claimed", "Drafting"},
+        # Repeated quality failures park the topic for Chase instead of looping weekly.
+        "Held": {"Claimed", "Drafting"},
         "Rejected": {"Review"},
         "Published": {"Review"},
     }
+    if hold_reason and status != "Held":
+        raise ValueError("Hold reason is only written when holding a topic")
     if status not in allowed or not topic.get("research_claimed_at"):
         raise ValueError("Invalid or unowned research transition")
     with ResearchAPI(settings) as api:
@@ -75,6 +85,8 @@ def transition(
         update: dict[str, Any] = {"Status": status}
         if note:
             update["Review notes"] = (str(fields.get("Review notes", "")) + "\n" + note).strip()
+        if hold_reason:
+            update["Hold reason"] = hold_reason
         if status == "Published":
             if not url.startswith("https://geo-insulation.com/blog/"):
                 raise ValueError("Expected verified Geo blog URL")

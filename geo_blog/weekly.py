@@ -237,12 +237,23 @@ def notify_failure(settings: Settings, exc: BaseException) -> None:
     Owner preference (September 28, 2026): a fixed run posted late beats a visible
     failure in production.
     """
-    detail = (type(exc).__name__ + ": " + str(exc))[:300]
+    from .writer_feedback import DraftQualityError
+
+    if isinstance(exc, DraftQualityError):
+        # List only the checks that failed; the full scorecard hid them (November 11, 2026).
+        detail = (
+            f'"{exc.keyword}" failed quality review after {exc.attempts} attempts.\n'
+            "Still failing:\n" + "\n".join("• " + b for b in exc.blockers[:8])
+        )[:1500]
+    else:
+        detail = (type(exc).__name__ + ": " + str(exc))[:600]
+    held = str(getattr(exc, "topic_held", ""))
     private_alert(
         settings,
         "This week's blog did not go out. Nothing was posted in the client's channel.\n"
         f"Reason: {detail}\n"
-        "Ask the blog agent to fix it and rerun this week's blog.",
+        + (held + "\n" if held else "")
+        + "Ask the blog agent to fix it and rerun this week's blog.",
     )
 
 

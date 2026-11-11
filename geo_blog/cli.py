@@ -60,13 +60,32 @@ def _run_daily(
     if send:
         settings.require("slack_bot_token", "slack_approver_ids")
     day = datetime.now(ZoneInfo(settings.timezone)).date().isoformat()
-    try:
-        if not topic and settings.blog_queue_source == "research":
-            from .research_queue import select_research
+    from .writer_feedback import topic_blockers
 
-            topic = select_research(settings, store.used_topics(), hold_duplicates=True)
-        else:
-            topic = topic or select_topic(settings, store.used_topics())
+    # Research rows that cannot pass are Held inside select_research. Basecamp tasks
+    # cannot be held from here, so skip them for this run and tell Chase; otherwise the
+    # same impossible task would stop every weekly run.
+    skipped: dict[str, str] = {}
+    try:
+        while not topic:
+            used = store.used_topics() | set(skipped)
+            if settings.blog_queue_source == "research":
+                from .research_queue import select_research
+
+                candidate = select_research(settings, used, hold_duplicates=True)
+            else:
+                candidate = select_topic(settings, used)
+            if not candidate:
+                break
+            blockers = topic_blockers(str(candidate.get("keyword", "")))
+            if not blockers:
+                topic = candidate
+                break
+            skipped[str(candidate["id"])] = " ".join(blockers)
+            if len(skipped) >= 25:
+                raise ValueError(
+                    "Too many queued topics fail the website limits; inspect the queue"
+                )
     except Exception as exc:
         if send:
             from .slack_app import queue_notice
@@ -81,6 +100,15 @@ def _run_daily(
             )
             queue_notice(settings, store, day, "queue-error", message)
         raise
+    if skipped:
+        from .weekly import private_alert
+
+        private_alert(
+            settings,
+            "Skipped queued blog topics that cannot pass the website limits:\n"
+            + "\n".join(f"• {key}: {why}" for key, why in skipped.items())
+            + "\nShorten their primary keywords so they can be drafted.",
+        )
     if not topic:
         message = (
             "No unused Basecamp blog tasks are ready to draft. Existing drafts and completed tasks are skipped; please review the Content Sprint queue."
@@ -94,6 +122,9 @@ def _run_daily(
             mention = " ".join(f"<@{user}>" for user in sorted(settings.approvers))
             queue_notice(settings, store, day, "queue-empty", (mention + " " + message).strip())
         return None
+    # A topic passed in directly (a request or brief) is never silently swapped.
+    if blockers := topic_blockers(str(topic.get("keyword", ""))):
+        raise ValueError("Topic cannot pass the website limits: " + " ".join(blockers))
     if settings.website_preview_enabled:
         from .site_preview import preflight
 
@@ -164,16 +195,14 @@ def _run_daily(
         store.fail(draft_id, type(exc).__name__)
         if topic.get("research_claimed_at"):
             try:
-                from .research_lifecycle import transition
+                from .quality_failures import release_failed_claim
 
-                transition(
-                    settings,
-                    topic,
-                    "Proposed",
-                    note=f"Draft stopped ({type(exc).__name__}); returned for a later attempt.",
-                )
-                with store.db() as db:
-                    db.execute("UPDATE drafts SET status='failed_requeued' WHERE id=?", (draft_id,))
+                if release_failed_claim(settings, store, topic, draft_id, exc) == "Held":
+                    # Read by weekly.notify_failure so the alert says the queue moved on.
+                    exc.topic_held = (  # type: ignore[attr-defined]
+                        f'The topic "{topic.get("keyword", "")}" failed repeatedly and is now '
+                        "Held in Airtable; next week's run will take the next Proposed topic."
+                    )
             except Exception as recovery_error:
                 logging.error("Research reset needs inspection: %s", type(recovery_error).__name__)
         row = store.required(draft_id)
