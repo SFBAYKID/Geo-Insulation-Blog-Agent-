@@ -106,3 +106,21 @@ def test_body_failures_never_trigger_metadata_call(tmp_path, valid_article):
     stages = [c.kwargs.get("usage_stage") for c in w.call.call_args_list]
     assert "metadata_options" not in stages
     assert len(stages) == WRITER_ATTEMPTS
+
+
+def test_writer_retains_generic_fallback_note_in_approved_payload(tmp_path, valid_article):
+    broken = replace_metadata(valid_article, {"description": "AI workflow automation guide."})
+    w = writer()
+    w.call = Mock(
+        side_effect=[
+            message(broken),
+            message(json.dumps({"description": ["too short"]})),
+            message('{"verdict":"approve","notes":[]}'),
+        ]
+    )
+    result = w.write_from_research(
+        {"keyword": KEYWORD}, "2026-11-11", tmp_path, [], "Evidence", URLS
+    )
+    assert "generic last-resort" in result["metadata_fallback_note"]
+    assert result["front_matter"]["description"] in result["metadata_fallback_note"]
+    assert "last-resort" not in result["markdown"]

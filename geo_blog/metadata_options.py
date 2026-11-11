@@ -138,12 +138,12 @@ def repair_metadata(
     try:
         reply = response_json(response)
     except ValueError:
-        return deterministic_repair(validate, text, topic, urls)
+        return deterministic_repair(validate, text, topic, urls, output_dir)
     if not isinstance(reply, dict):
-        return deterministic_repair(validate, text, topic, urls)
+        return deterministic_repair(validate, text, topic, urls, output_dir)
     options = {f: candidates(reply, f) for f in fields}
     if not all(options.values()):
-        return deterministic_repair(validate, text, topic, urls)
+        return deterministic_repair(validate, text, topic, urls, output_dir)
     # Try each field's options with the others fixed at their first choice, then all
     # pairs; at most OPTIONS * OPTIONS cheap local validations.
     combos: list[dict[str, str]] = []
@@ -164,11 +164,15 @@ def repair_metadata(
                 json.dumps(values, indent=2)
             )
             return fixed, result
-    return deterministic_repair(validate, text, topic, urls)
+    return deterministic_repair(validate, text, topic, urls, output_dir)
 
 
 def deterministic_repair(
-    validate: Any, text: str, topic: dict[str, Any], urls: set[str]
+    validate: Any,
+    text: str,
+    topic: dict[str, Any],
+    urls: set[str],
+    output_dir: Path | None = None,
 ) -> tuple[str, Any] | None:
     """Repair lengths locally while retaining every required metadata phrase."""
     from .content import parse_draft
@@ -178,6 +182,7 @@ def deterministic_repair(
     secondary = topic.get("secondary_keyword", "")
     fm, _ = parse_draft(text)
     values = {}
+    generic_description = None
     for field, (low, high) in LIMITS.items():
         phrases = [primary]
         if secondary_required_in(field, primary, secondary):
@@ -189,7 +194,25 @@ def deterministic_repair(
             fixed = fit_length(fm[field], phrases, low, high)
             if fixed is None:
                 fixed = description_fallback(phrases) if field == "description" else primary
+                if field == "description":
+                    generic_description = fixed
             values[field] = fixed
     fixed_text = replace_metadata(text, values) if values else text
     result = validate(fixed_text, primary, urls, secondary)
+    if result[2].passed and generic_description is not None and output_dir is not None:
+        (output_dir / "generic-description.json").write_text(
+            json.dumps({"description": generic_description})
+        )
     return (fixed_text, result) if result[2].passed else None
+
+
+def generic_description_note(output_dir: Path, description: str) -> str:
+    """Flag only a fallback still present in the final editor-approved draft."""
+    path = output_dir / "generic-description.json"
+    if not path.exists() or json.loads(path.read_text()).get("description") != description:
+        return ""
+    return (
+        "The description uses generic last-resort wording because model options and "
+        "word-boundary trimming did not fit. The editor approved it, but it needs "
+        "owner attention: " + description
+    )

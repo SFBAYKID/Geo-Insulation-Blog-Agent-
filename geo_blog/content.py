@@ -15,7 +15,7 @@ import yaml
 
 from .editor_notes import required_notes, rereview_request
 from .evidence import selected_packet, source_context
-from .metadata_options import repair_metadata
+from .metadata_options import generic_description_note, repair_metadata
 from .model_usage import cached_text, fingerprint, record_usage, stable_tools
 from .models import StructureCheck, StructureReport
 from .openai_client import make_client
@@ -742,6 +742,9 @@ class Writer:
                     (output_dir / "draft.md").write_text(text)
                     draft = {
                         "front_matter": fm,
+                        "metadata_fallback_note": generic_description_note(
+                            output_dir, fm["description"]
+                        ),
                         "markdown": text,
                         "report": report.summary,
                         "sources": sorted(urls),

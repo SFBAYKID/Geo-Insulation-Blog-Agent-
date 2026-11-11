@@ -140,3 +140,22 @@ def test_monday_cli_uses_explicit_environment_and_staging(monkeypatch, tmp_path)
     cli.main()
     factory.assert_called_once_with(_env_file="/explicit/geo.env")
     assert stage.call_count == 1
+
+
+def test_generic_fallback_is_saved_and_reported_privately(tmp_path, monkeypatch, valid_article):
+    from geo_blog.metadata_options import generic_description_note
+
+    text = replace_metadata(valid_article, {"description": "AI workflow automation guide."})
+    result = deterministic_repair(
+        validate, text, {"keyword": "AI workflow automation"}, URLS, tmp_path
+    )
+    description = result[1][0]["description"]
+    note = generic_description_note(tmp_path, description)
+    assert "generic last-resort" in note and description in note
+    assert generic_description_note(tmp_path, "A later model rewrite") == ""
+    client = Mock()
+    monkeypatch.setattr("geo_blog.slack_guard.safe_client", lambda *args: client)
+    report_soft_findings(Settings(_env_file=None), {"metadata_fallback_note": note})
+    call = client.chat_postMessage.call_args
+    assert call.kwargs["channel"] == "C0B02721MNK"
+    assert note in call.kwargs["text"]

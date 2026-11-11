@@ -47,6 +47,8 @@ def report_soft_findings(settings: Settings, draft: dict[str, Any]) -> None:
         for c in draft.get("report", {}).get("checks", [])
         if not c.get("passed") and not c.get("is_hard", True)
     ]
+    if note := draft.get("metadata_fallback_note"):
+        findings.append(str(note))
     if findings:
         private_alert(
             settings, "Blog passed hard checks. Advisory SEO findings:\n" + "\n".join(findings)
