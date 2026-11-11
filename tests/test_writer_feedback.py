@@ -16,7 +16,7 @@ def test_long_pair_title_exception_preserves_other_secondary_checks(valid_articl
     assert secondary_fits_title("attic", "solar")
     article = valid_article.replace("AI workflow automation", primary)
     report = validate(article, primary, set(), secondary)[2]
-    keys = {c.rule_key for c in report.hard_failures}
+    keys = {c.rule_key for c in report.checks if not c.passed}
     assert "secondary_title" not in keys
     assert {
         "secondary_h1",
@@ -26,7 +26,8 @@ def test_long_pair_title_exception_preserves_other_secondary_checks(valid_articl
     } <= keys
     assert "secondary_title" in {
         c.rule_key
-        for c in validate(valid_article, "AI workflow automation", set(), "attic")[2].hard_failures
+        for c in validate(valid_article, "AI workflow automation", set(), "attic")[2].checks
+        if not c.passed
     }
 
 

@@ -155,7 +155,7 @@ def validate(
                 expected,
                 str(actual) if actual is not None else "pass" if passed else "fail",
                 bool(passed),
-                True,
+                not (key.startswith("secondary_") or key in {"keyword_h1", "repetition"}),
             )
         )
 
@@ -672,6 +672,9 @@ class Writer:
                     text = apply_edits(text, response_json(response)["edits"])
                 else:
                     text = response_text(response)
+                from .metadata_lengths import repair_heading
+
+                text = repair_heading(text, topic["keyword"])
                 problem = ""
                 fm, body, report = validate(
                     text,

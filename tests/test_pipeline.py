@@ -279,7 +279,7 @@ def test_secondary_keyword_and_repetition_are_checked(valid_article):
         "https://example.org/research",
     }
     report = validate(valid_article, "AI workflow automation", urls, "human in the loop AI")[2]
-    assert {c.rule_key for c in report.hard_failures} == {
+    assert {c.rule_key for c in report.checks if not c.passed and not c.is_hard} == {
         "secondary_keyword",
         "secondary_metadata",
         "secondary_h1",
@@ -289,7 +289,8 @@ def test_secondary_keyword_and_repetition_are_checked(valid_article):
     report = validate(
         valid_article + " AI workflow automation" * 20, "AI workflow automation", urls
     )[2]
-    assert "repetition" in {c.rule_key for c in report.hard_failures}
+    assert report.passed
+    assert "repetition" in {c.rule_key for c in report.checks if not c.passed and not c.is_hard}
 
 
 def test_preview_export_is_draft_with_single_template_heading(tmp_path, valid_article):

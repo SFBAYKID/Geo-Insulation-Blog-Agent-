@@ -67,7 +67,7 @@ def pad(text, low=140, high=155):
 
 
 def failing_keys(text, primary, secondary):
-    return {c.rule_key for c in validate(text, primary, URLS, secondary)[2].hard_failures}
+    return {c.rule_key for c in validate(text, primary, URLS, secondary)[2].checks if not c.passed}
 
 
 @pytest.mark.parametrize(("primary", "secondary"), LIVE_QUEUE)

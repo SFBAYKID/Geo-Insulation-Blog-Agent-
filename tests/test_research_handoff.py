@@ -371,3 +371,35 @@ def test_direct_request_with_impossible_keyword_is_refused(tmp_path):
     settings = config(tmp_path).model_copy(update={"blog_queue_source": "basecamp"})
     with pytest.raises(ValueError, match="website limits"):
         cli.run_daily(settings, Store(tmp_path), topic={"id": "req", "keyword": "x" * 60})
+
+
+def test_weekly_fallback_preserves_strikes_and_skips_requeued_topics(tmp_path, monkeypatch):
+    from geo_blog.cli import run_daily
+    from geo_blog.quality_failures import failure_count
+    from geo_blog.weekly_attempts import draft_with_fallback
+    from geo_blog.writer_feedback import DraftQualityError
+
+    api = FakeAPI(
+        [
+            row("recA", priority=1, keyword="attic comfort"),
+            row("recB", priority=2, keyword="wall insulation"),
+            row("recC", priority=3, keyword="garage insulation"),
+        ]
+    )
+    wire(monkeypatch, api)
+    seen = []
+
+    def draft(topic, day, folder):
+        seen.append(topic["id"])
+        raise DraftQualityError(topic["keyword"], 7, ["depth"])
+
+    monkeypatch.setattr("geo_blog.content.Writer", lambda settings: Mock(draft=draft))
+    monkeypatch.setattr("geo_blog.weekly.private_alert", Mock())
+    settings = config(tmp_path)
+    with pytest.raises(DraftQualityError):
+        draft_with_fallback(settings, Store(tmp_path), run_daily)
+    assert seen == ["recA", "recB", "recC"]
+    for record_id in seen:
+        fields = api.records[record_id]["fields"]
+        assert fields["Status"] == "Proposed"
+        assert failure_count(settings, record_id, fields) == 1

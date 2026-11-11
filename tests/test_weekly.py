@@ -114,7 +114,7 @@ def test_rejected_staged_draft_is_replaced_by_fresh_draft(tmp_path, env, monkeyp
     ready_draft(tmp_path, store, "old", status="rejected")
     (tmp_path / "weekly-next.json").write_text(json.dumps({"draft_id": "old"}))
 
-    def fresh(s, st, send):
+    def fresh(s, st, send, **kwargs):
         assert send is False
         ready_draft(tmp_path, st, "fresh")
         return "fresh"
@@ -268,7 +268,7 @@ def test_failure_is_reported_in_test_channel_never_production(tmp_path, env):
 
 def test_empty_week_is_reported_instead_of_silent(tmp_path, env, monkeypatch):
     settings, store, client, _ = env
-    monkeypatch.setattr("geo_blog.cli.run_daily", lambda s, st, send: None)
+    monkeypatch.setattr("geo_blog.cli.run_daily", lambda s, st, send, **kwargs: None)
     with pytest.raises(ValueError, match="No finished blog"):
         weekly.run_weekly(settings, store)
     client.chat_postMessage.assert_not_called()

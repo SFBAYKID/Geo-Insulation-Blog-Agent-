@@ -77,22 +77,21 @@ def test_description_over_limit_is_fixed_by_measured_option(tmp_path, valid_arti
     assert json.loads((tmp_path / "metadata-chosen-0.json").read_text()) == {"description": GOOD}
 
 
-def test_no_passing_option_falls_back_to_normal_correction(tmp_path, valid_article):
+def test_no_passing_option_uses_deterministic_repair(tmp_path, valid_article):
     broken = long_description(valid_article)
     w = writer()
     w.call = Mock(
         side_effect=[
             message(broken),
             message(json.dumps({"description": ["too short"]})),
-            message(valid_article),
             message('{"verdict":"approve","notes":[]}'),
         ]
     )
     result = w.write_from_research(
         {"keyword": KEYWORD}, "2026-11-11", tmp_path, [], "Evidence", URLS
     )
-    assert w.call.call_count == 4
-    assert "characters_to_remove" in w.call.call_args_list[2].args[1]
+    assert w.call.call_count == 3
+    assert 140 <= len(result["front_matter"]["description"]) <= 155
     assert result["report"]["passed"]
 
 

@@ -8,7 +8,8 @@ description length. Each correction trimmed a few characters (176, 176, 170, 164
 When every failing check is a title or description check, ask once for several
 alternative wordings, then measure each one in code with the full validator and keep
 the first that passes. Selection is deterministic; the model only has to produce
-variety. If no option passes, the normal correction loop continues unchanged.
+variety. If no option passes, a provider-free word-boundary repair is validated before
+returning to the normal correction loop.
 """
 
 from __future__ import annotations
@@ -137,12 +138,12 @@ def repair_metadata(
     try:
         reply = response_json(response)
     except ValueError:
-        return None
+        return deterministic_repair(validate, text, topic, urls)
     if not isinstance(reply, dict):
-        return None
+        return deterministic_repair(validate, text, topic, urls)
     options = {f: candidates(reply, f) for f in fields}
     if not all(options.values()):
-        return None
+        return deterministic_repair(validate, text, topic, urls)
     # Try each field's options with the others fixed at their first choice, then all
     # pairs; at most OPTIONS * OPTIONS cheap local validations.
     combos: list[dict[str, str]] = []
@@ -163,4 +164,32 @@ def repair_metadata(
                 json.dumps(values, indent=2)
             )
             return fixed, result
-    return None
+    return deterministic_repair(validate, text, topic, urls)
+
+
+def deterministic_repair(
+    validate: Any, text: str, topic: dict[str, Any], urls: set[str]
+) -> tuple[str, Any] | None:
+    """Repair lengths locally while retaining every required metadata phrase."""
+    from .content import parse_draft
+    from .metadata_lengths import description_fallback, fit_length
+
+    primary = topic["keyword"]
+    secondary = topic.get("secondary_keyword", "")
+    fm, _ = parse_draft(text)
+    values = {}
+    for field, (low, high) in LIMITS.items():
+        phrases = [primary]
+        if secondary_required_in(field, primary, secondary):
+            from .text_format import count_keyword_in_text
+
+            if count_keyword_in_text(fm[field], secondary):
+                phrases.append(secondary)
+        if not low <= len(fm[field]) <= high:
+            fixed = fit_length(fm[field], phrases, low, high)
+            if fixed is None:
+                fixed = description_fallback(phrases) if field == "description" else primary
+            values[field] = fixed
+    fixed_text = replace_metadata(text, values) if values else text
+    result = validate(fixed_text, primary, urls, secondary)
+    return (fixed_text, result) if result[2].passed else None

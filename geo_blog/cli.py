@@ -25,6 +25,7 @@ def run_daily(
     practice: bool = False,
     parent_thread: Any = None,
     request_key: Any = None,
+    excluded_topics: set[str] | None = None,
 ) -> Any:
     """Serialize research drafting across schedule, command, and request processes."""
     import fcntl
@@ -35,6 +36,7 @@ def run_daily(
         practice=practice,
         parent_thread=parent_thread,
         request_key=request_key,
+        excluded_topics=excluded_topics,
     )
     if settings.blog_queue_source != "research":
         return _run_daily(settings, store, **options)
@@ -52,6 +54,7 @@ def _run_daily(
     practice: bool = False,
     parent_thread: Any = None,
     request_key: Any = None,
+    excluded_topics: set[str] | None = None,
 ) -> Any:
     """Reserve a draft, retain its evidence, and optionally deliver it in the saved thread."""
     from .content import Writer
@@ -68,7 +71,7 @@ def _run_daily(
     skipped: dict[str, str] = {}
     try:
         while not topic:
-            used = store.used_topics() | set(skipped)
+            used = store.used_topics() | set(skipped) | (excluded_topics or set())
             if settings.blog_queue_source == "research":
                 from .research_queue import select_research
 
@@ -193,6 +196,10 @@ def _run_daily(
         store.save(draft_id, draft)
     except Exception as exc:
         store.fail(draft_id, type(exc).__name__)
+        from .writer_feedback import DraftQualityError
+
+        if isinstance(exc, DraftQualityError):
+            exc.topic_id = str(topic["id"])
         if topic.get("research_claimed_at"):
             try:
                 from .quality_failures import release_failed_claim
@@ -201,9 +208,11 @@ def _run_daily(
                     # Read by weekly.notify_failure so the alert says the queue moved on.
                     exc.topic_held = (  # type: ignore[attr-defined]
                         f'The topic "{topic.get("keyword", "")}" failed repeatedly and is now '
-                        "Held in Airtable; next week's run will take the next Proposed topic."
+                        "Held in Airtable; the next attempt will take the next Proposed topic."
                     )
             except Exception as recovery_error:
+                if isinstance(exc, DraftQualityError):
+                    exc.topic_id = ""  # Do not continue after an ambiguous lifecycle write.
                 logging.error("Research reset needs inspection: %s", type(recovery_error).__name__)
         row = store.required(draft_id)
         if send and row.get("thread_ts"):
@@ -320,8 +329,14 @@ def main() -> None:
     nightly.add_argument(
         "--draft", help="With --retry, resume this saved nightly ID even after midnight"
     )
+    parser.add_argument("--env-file")
     args = parser.parse_args()
-    settings = Settings()
+    settings_options: dict[str, Any] = {"_env_file": args.env_file} if args.env_file else {}
+    settings = Settings(**settings_options)
+    if args.env_file and settings.github_token.get_secret_value():
+        import os
+
+        os.environ["GH_TOKEN"] = settings.github_token.get_secret_value()
     if args.command == "doctor":
         from .doctor import report_readiness
 
@@ -423,3 +438,7 @@ def main() -> None:
         from .slack_app import serve
 
         serve(settings, store, daily_job=lambda: run_nightly(settings, store))
+
+
+if __name__ == "__main__":
+    main()

@@ -27,6 +27,23 @@ def staged_path(settings: Settings) -> Path:
 
 
 def stage_test(settings: Settings, store: Store) -> str | None:
+    """Serialize staging with production; report any failure only to the owner."""
+    with (settings.storage_dir / "weekly.lock").open("a") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return None
+        try:
+            return _stage_test(settings, store)
+        except Exception as exc:
+            private_alert(
+                settings,
+                f"Monday draft staging failed ({type(exc).__name__}). Inspect the saved run before retrying.",
+            )
+            raise
+
+
+def _stage_test(settings: Settings, store: Store) -> str | None:
     """Write the next blog and deliver it only in the test channel for owner review."""
     path = staged_path(settings)
     if path.exists():
@@ -81,13 +98,13 @@ def run_weekly(settings: Settings, store: Store) -> str | None:
                 draft_id = candidate
         if not draft_id:
             from .cli import run_daily
+            from .weekly_attempts import draft_with_fallback
 
-            draft_id = run_daily(settings, store, send=False)
+            draft_id = draft_with_fallback(settings, store, run_daily)
         if not draft_id:
-            # Empty queue, or today's reservation already used by a failed attempt.
+            # No eligible topic remains after any failed attempts.
             raise ValueError(
-                "No finished blog was produced: the Basecamp queue is empty or today's "
-                "draft reservation was already used; check the service log"
+                "No finished blog was produced: no eligible topic remains; check the service log"
             )
         share(settings, store, draft_id)
         return str(draft_id)
@@ -158,6 +175,9 @@ def share(settings: Settings, store: Store, draft_id: str) -> dict[str, Any]:
         # The publisher merges only non-draft PRs; readiness is the owner's weekly consent.
         command(["gh", "pr", "ready", str(pr_number)], checkout)
     base_sha = api(checkout, f"repos/{REPOSITORY}/git/ref/heads/main")["object"]["sha"]
+    from .weekly_attempts import report_soft_findings
+
+    report_soft_findings(settings, draft)
     if settings.production_auto_publish_enabled:
         from .automatic_publication import arm
 

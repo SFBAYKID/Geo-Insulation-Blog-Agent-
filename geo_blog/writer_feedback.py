@@ -85,7 +85,7 @@ def topic_blockers(primary: str) -> list[str]:
 
 def failed_checks(summary: dict[str, Any]) -> list[dict[str, Any]]:
     """Only the checks that blocked delivery, for alerts and feedback headers."""
-    return [c for c in summary.get("checks", []) if not c.get("passed")]
+    return [c for c in summary.get("checks", []) if not c.get("passed") and c.get("is_hard", True)]
 
 
 def describe_check(check: dict[str, Any]) -> str:
@@ -103,6 +103,7 @@ class DraftQualityError(ValueError):
     """
 
     def __init__(self, keyword: str, attempts: int, blockers: list[str]) -> None:
+        self.topic_id = ""
         self.keyword = keyword
         self.attempts = attempts
         self.blockers = list(blockers) or ["No attempt produced a checkable draft"]
