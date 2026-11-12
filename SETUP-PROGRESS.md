@@ -296,3 +296,39 @@ It cannot approve, publish, edit, start runs or change Basecamp; the guard allow
 PRODUCTION_CHAT_ENABLED gates it, and replies are capped at 40 per day.
 Chase added channels:history and groups:history with message.channels and message.groups events and reinstalled; the bot token is unchanged, so replies in a thread the agent has answered no longer need a mention.
 Chase also asked for a blank line after each sentence in every Slack message; sentence_lines now adds it while keeping quotes and list items tight.
+
+
+## Reliability follow-up verified — November 12, 2026
+
+SSH access recovered in this session.
+Installed the rehearsed staging-reuse bundle for 0e387de over the server's 5e49ca6 baseline; all 455 server tests and project checks passed before two files were backed up and hash-verified.
+Installed Monday 17:00 UTC staging in geo-blog's own crontab and verified the original Wednesday 16:00/17:00 UTC gated entry remained unchanged.
+The systemd weekly timer remains disabled and inactive.
+No local listener was started.
+
+Retrieved latest-draft.md and topic.json for 5bb96eda603547a9 and 34ec3886d7c84b1a from authoritative storage.
+Committed unchanged Markdown, minimal keyword-only topic fixtures and offline regressions for the overlong H1 and 158-character description.
+The fixture README records the original Markdown hashes.
+
+The first staging attempt, cc93bc5482be48b5, failed because closing linked copy was inside the final plain-text FAQ answer.
+Added explicit writer guidance and a diagnostic naming the question and the required separate closing section.
+The FAQ validator still rejects ambiguous linked answers.
+Local pytest (458 tests), Ruff lint/format, mypy and tools.check_project pass at 3f32f6b.
+The follow-up installer passed all 458 server tests and project checks, backed up the nine changed files under storage/faq-guidance-backup-20261112, and verified installed hashes.
+After verifying the failed run was failed_requeued, had no payload or approval card, and its source remained Proposed with unchanged drafting inputs, saved a recovery receipt and released only its daily run key.
+No ambiguous send or publication was retried.
+
+The corrected weekly --test run staged f3e7459416484576, “Why Is My Upstairs So Hot Even With AC?”, in weekly-next.json.
+Its 931-word prose passed structural and AI editor checks, with a ready illustration and exact-commit website preview.
+Website draft PR: https://github.com/Calvo-Consulting/geo-insulation/pull/134.
+Preview commit: aa1c5e541142187f5fbd32c9953d2f121ef3d1a7.
+Lighthouse scores: performance 99, accessibility 100, best practices 100, SEO 100.
+The pending approval card was delivered only to C0B02721MNK.
+A second weekly --test call returned the same draft, with unchanged draft count and evidence hashes.
+Production review remains published for 05e294b9165845b8; this task did not arm or publish the next article.
+Read-only queue inspection found wet attic insulation and how long does attic insulation last eligible after the hot-upstairs claim.
+
+Agent PR #1 remains open with a review finding: its pre-existing automatic-publication path accepts policy markers without an exact-version reviewer when enabled, while the supplied AGENTS.md requires exact-version approval.
+The implementation labels this a November 10 owner policy; clarification is pending before merge.
+GitHub reports no checks, branch protection or rulesets for the agent repository; the reported validation is local/server execution.
+The original ~/geo-insulation checkout's uncommitted documentation and .idea/ were preserved.
