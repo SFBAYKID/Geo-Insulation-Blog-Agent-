@@ -23,6 +23,17 @@ def test_closing_call_to_action_after_rule_stays_in_body():
     assert prose.endswith("---\n\n[Get a Free Estimate](https://geo-insulation.com/contact)")
 
 
+def test_unseparated_closing_link_explains_lossless_repair():
+    closing = "Review [Geo's service](https://geo-insulation.com/attic-insulation-in-san-antonio/)."
+    body = "## FAQ\n\n**Is it safe?**\n\nAsk a professional.\n\n" + closing
+    with pytest.raises(ValueError, match="## Next steps") as caught:
+        extract_faq(body)
+    assert "Is it safe?" in str(caught.value)
+    prose, faq = extract_faq(body.replace(closing, "## Next steps\n\n" + closing))
+    assert faq == [{"question": "Is it safe?", "answer": "Ask a professional."}]
+    assert closing in prose
+
+
 @pytest.mark.parametrize(
     "body",
     [
