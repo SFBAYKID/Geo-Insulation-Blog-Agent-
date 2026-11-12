@@ -29,6 +29,31 @@ def test_cached_november_four_draft_repairs_without_provider():
     assert len(result[1][0]["title"]) <= 55
 
 
+@pytest.mark.parametrize(
+    ("draft_id", "failed_rule"),
+    [("5bb96eda603547a9", "h1"), ("34ec3886d7c84b1a", "description")],
+)
+def test_cached_november_eleven_drafts_repair_without_provider(draft_id, failed_rule):
+    from geo_blog.metadata_lengths import repair_heading
+
+    folder = Path(__file__).parent / "fixtures/failed-drafts" / draft_id
+    topic = json.loads((folder / "topic.json").read_text())
+    text = (folder / "latest-draft.md").read_text()
+    urls = set(re.findall(r"\]\((https?://[^\s)]+)\)", text))
+    original = validate(text, topic["keyword"], urls, topic["secondary_keyword"])[2]
+    assert {c.rule_key for c in original.checks if c.is_hard and not c.passed} == {failed_rule}
+    heading_fixed = repair_heading(text, topic["keyword"])
+    result = deterministic_repair(validate, heading_fixed, topic, urls)
+    assert result is not None and result[1][2].passed
+    fm, body = parse_draft(result[0])
+    assert 140 <= len(fm["description"]) <= 155
+    assert len(re.search(r"^# (.+)$", body, re.M)[1]) <= 70
+    assert body == parse_draft(heading_fixed)[1]
+    assert re.sub(r"^# .+$", "#", body, flags=re.M) == re.sub(
+        r"^# .+$", "#", parse_draft(text)[1], flags=re.M
+    )
+
+
 def test_trim_retains_phrases_even_at_end():
     value = "A detailed homeowner comparison and guide to cellulose vs fiberglass insulation"
     repaired = fit_length(value, ["cellulose vs fiberglass insulation"], 20, 55)
