@@ -50,7 +50,8 @@ def _stage_test(settings: Settings, store: Store) -> str | None:
         staged = json.loads(path.read_text())
         row = store.get(staged["draft_id"])
         if row and row["status"] in REUSABLE_DRAFT_STATES:
-            raise ValueError(f"Draft {staged['draft_id']} is already staged for Wednesday")
+            logging.info("Reusing draft %s already staged for Wednesday", staged["draft_id"])
+            return str(staged["draft_id"])
     from .cli import run_daily
 
     # the reviewer's Basecamp notice waits for the real production share.

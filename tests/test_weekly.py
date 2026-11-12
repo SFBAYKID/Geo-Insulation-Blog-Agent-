@@ -290,3 +290,17 @@ def test_staging_pr_never_reaches_production_channel(tmp_path, env, monkeypatch)
     with pytest.raises(ValueError, match="Website PR"):
         weekly.share(settings, store, "wk1")
     client.chat_postMessage.assert_not_called()
+
+
+@pytest.mark.parametrize("status", ["ready", "pending", "approved"])
+def test_monday_reuses_draft_staged_early_without_spending(tmp_path, env, monkeypatch, status):
+    settings, store, client, _ = env
+    ready_draft(tmp_path, store, "early", status=status)
+    staged = json.dumps({"draft_id": "early", "staged_at": "2026-11-12T12:00:00Z"})
+    (tmp_path / "weekly-next.json").write_text(staged)
+    daily = Mock()
+    monkeypatch.setattr("geo_blog.cli.run_daily", daily)
+    assert weekly.stage_test(settings, store) == "early"
+    daily.assert_not_called()
+    client.chat_postMessage.assert_not_called()
+    assert (tmp_path / "weekly-next.json").read_text() == staged
