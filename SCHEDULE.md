@@ -7,3 +7,8 @@ An existing reusable staged draft prevents a second draft.
 Install deploy/geo-blog-production.cron only in geo-blog's own crontab, preserving any other Geo entries.
 The systemd weekly timer stays disabled to avoid duplicate runs.
 Failures and advisory SEO findings belong only in C0B02721MNK.
+
+Chase reconfirmed on November 12, 2026 that Wednesday publication must not wait for Slack approval.
+The exact checked version publishes automatically, then a verified live link and Undo publication button go to C0C9NUA9BG9.
+New Slack announcements are restricted to weekdays 09:00–17:00 America/Chicago; deferred announcements retain durable receipts.
+Early staging never advances the publication date.

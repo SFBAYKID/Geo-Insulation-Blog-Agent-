@@ -1,15 +1,14 @@
 # Geo Insulation Blog Agent
 
-Writes from supplied Basecamp briefs, checks prose with an AI editor, attaches labeled OpenAI illustrations, and prepares Slack review. Intended publication uses an exact-version Slack approval, a website GitHub PR, verified Vercel publication and then Basecamp completion.
+Writes from supplied research or Basecamp briefs, checks prose with an AI editor, attaches labeled OpenAI illustrations, and prepares an exact-commit website preview.
+Monday stages a checked draft in the playground.
+**Wednesday at 9 AM Pacific publishes automatically, then posts the verified live link and Undo publication button in C0C9NUA9BG9.**
+Chase reconfirmed on November 12, 2026 that blogs must not wait for Slack approval.
+Playground approval never publishes, and early staging does not publish early.
 
-**Weekly production reviews are enabled for Wednesday 9 AM Pacific in C0BP597644B.**
-The Geo droplet listener uses verified dedicated Basecamp and GitHub credentials.
-The full illustrated playground review and real approval button passed; playground approval never publishes.
-Website foundation PR #87 is deployed, and each new article still requires its own exact-version production Slack approval.
-The Basecamp brief queue is empty, so no new article can be produced yet.
-Upstream keyword access and the separate Airtable/Google worker remain outstanding.
-A real production article publication and subsequent Basecamp completion have not yet been exercised.
-See SETUP-PROGRESS.md.
+The dedicated Geo runtime, Astro website integration and production publication are verified.
+Research queue ownership and lifecycle rules are in RESEARCH-HANDOFF.md.
+See SETUP-PROGRESS.md for dated verification and recovery evidence.
 
 Agent repository: SFBAYKID/Geo-Insulation-Blog-Agent- (trailing hyphen). This is not the website repository. Website: https://geo-insulation.com/. Basecamp account 5395893, Geo project 40851698. The dedicated Geo Blog Briefs list (10378779880) currently has no open briefs; existing Content Sprint optimization tasks are not an authorized replacement for the weekly new-blog queue.
 
@@ -34,7 +33,7 @@ Once prerequisites are verified, `main.py basecamp-queue` reads the queue; `main
 
 Private storage includes SQLite reservations, draft evidence, provider receipts, media history and exact-version reviews. Never overwrite server state with development state. A crash or ambiguous external action requires reconciliation before retrying. Chase asks the agent to fix failures; the agent handles repairs and safe reruns.
 
-All automated Slack output passes through slack_guard and sentence_lines. Only finished blogs with imagery reach the client. Upstream people supply research and keywords; this agent writes, edits and publishes after approval.
+All automated Slack output passes through slack_guard and sentence_lines. Only finished blogs with imagery reach the client. Upstream people supply research and keywords; this agent writes, edits and publishes automatically after the required quality checks.
 
 ## Model provider
 

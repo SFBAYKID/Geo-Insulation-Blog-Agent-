@@ -332,3 +332,14 @@ Agent PR #1 remains open with a review finding: its pre-existing automatic-publi
 The implementation labels this a November 10 owner policy; clarification is pending before merge.
 GitHub reports no checks, branch protection or rulesets for the agent repository; the reported validation is local/server execution.
 The original ~/geo-insulation checkout's uncommitted documentation and .idea/ were preserved.
+
+
+## Automatic-publication policy reconfirmed — November 12, 2026
+
+Chase explicitly clarified: “they should never wait for my approval” and should post on the website with the Undo button.
+This resolves the PR #1 policy finding and supersedes historical exact-version Slack approval instructions.
+The server already has automatic publication, publishing and production delivery enabled, with C0C9NUA9BG9 as the production destination.
+The listener is active, Wednesday cron is unchanged, and the systemd weekly timer remains disabled.
+The existing cellulose article's per-publication receipt is published with notification_state=sent, and its card builder includes geo_publication_undo.
+Next week's draft f3e7459416484576 remains in weekly-next.json; no early publication was triggered.
+Updated the isolated checkout's policy and operational documentation to reflect this decision, preserving the original checkout's uncommitted work.

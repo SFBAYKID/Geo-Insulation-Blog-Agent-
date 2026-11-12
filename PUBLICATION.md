@@ -1,9 +1,20 @@
-# Exact-version publication
+# Automatic publication and Undo
 
-Setup never publishes. PRODUCTION_DELIVERY_ENABLED=false until end-to-end test success and explicit production destination/reviewers are configured. The website repo is separate from the agent repo and remains unknown.
+Chase reconfirmed on November 12, 2026 that finished blogs publish automatically without waiting for Slack approval.
+Monday stages the next blog in the playground, and Wednesday 09:00 America/Los_Angeles initiates publication.
+Early staging and playground approval never publish.
 
-Only production_publish.py consumes an exact-version approval by a configured reviewer. Validate matching task/draft, commit, card, current feedback and unchanged checkout. Require exact-commit CI, approved imagery and normal GitHub merge rules without administrative bypass. Wait for the successful production deployment of the merged commit and verify actual article, media integrity, metadata, canonical, schema, sitemap and indexability before reporting success.
+Only production_publish.py publishes the exact checked version under the configured automatic-publication policy.
+Require matching draft, preview commit and policy receipts, unchanged feedback and checkout, exact-commit CI, labeled imagery and normal GitHub merge rules without administrative bypass.
+Wait for the successful production deployment of the merged commit and verify actual article, media integrity, metadata, canonical, schema, sitemap and indexability before reporting success.
+The verified website repository is Calvo-Consulting/geo-insulation, separate from the agent repository.
 
-Then post the verified live URL on the matching Basecamp task and complete it. A failure after merge must reconcile reality before retrying; retain receipts and do not erase publication evidence after notification failure. Playground Approve records editorial review only.
+After live verification, update the owned source lifecycle and post the live link with an Undo publication button in C0C9NUA9BG9.
+Basecamp comments/completion apply only when the configured source integration requires them.
+New Slack announcements wait for weekdays 09:00–17:00 America/Chicago.
+Persist notification receipts before sending; reconcile uncertain sends instead of duplicating them.
 
-The inherited website adapters need Geo Astro integration before any preview or publication. The current placeholder repository prevents using the prior website. Current Basecamp briefs mention staging; branch and Vercel mapping must be verified.
+Undo authenticates the configured user, workspace, channel, message and exact production commit.
+It creates a guarded revert PR for that article, preserves unrelated website work, requires normal exact-commit checks and merge rules, and verifies removal from the live site and sitemap.
+Only then report the article removed and hold its owned research topic to prevent automatic republication.
+Keep all publication and recovery evidence.

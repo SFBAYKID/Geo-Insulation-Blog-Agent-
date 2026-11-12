@@ -3,11 +3,17 @@ name: weekly-cadence
 type: feedback
 ---
 
-On October 6 Chase confirmed Wednesday 9 AM America/Los_Angeles and authorized production review delivery to C0BP597644B, replacing the earlier prohibition on production posts.
-Use the dedicated production scheduler after runtime prerequisites and a clean full playground test pass.
-Only exact-version Slack approval publishes.
-Dedicated Geo Basecamp authorization and GitHub credentials are active and verified.
-On October 6, enabled the geo-blog user crontab after the illustrated playground test and real approval passed; keep the systemd timer disabled to avoid duplicates.
-Website foundation PR #87 is deployed.
-Never invent scheduled topics or reuse the practice sample automatically.
-The Geo Blog Briefs list currently has no briefs; upstream keyword access and its separate worker are still pending.
+Chase reconfirmed on November 12, 2026: finished blogs must publish automatically, never wait for his approval, and post the live link with an Undo publication button.
+This supersedes the older exact-version Slack approval requirement.
+Retain exact-commit structural, editorial, image, preview, CI and live-verification gates.
+
+Wednesday 09:00 America/Los_Angeles is the publication schedule.
+Monday 17:00 UTC stages in C0B02721MNK and reuses an already staged draft.
+Early staging does not publish early.
+The current production announcement channel is C0C9NUA9BG9, changed by Chase on October 15.
+Keep the systemd weekly timer disabled because geo-blog's crontab owns scheduling.
+Keep the Mac listener disabled.
+New production announcements wait for weekdays 09:00–17:00 America/Chicago.
+Only configured users may use the authenticated, article-specific Undo button.
+Never invent scheduled topics or reuse a practice sample automatically.
+Use the authorized research queue contract in RESEARCH-HANDOFF.md.
