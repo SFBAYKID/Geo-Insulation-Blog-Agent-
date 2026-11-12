@@ -414,6 +414,14 @@ def serve(settings: Settings, store: Store, daily_job: Any = None) -> None:
 
         handle_review(settings, body, client)
 
+    def undo_publication(ack: Any, body: dict[str, Any], client: Any) -> None:
+        """Queue the authorized, article-specific removal without blocking Slack ACK."""
+        ack()
+        from .publication_undo import handle_undo
+
+        handle_undo(settings, body, client)
+
+    app.action("geo_publication_undo")(undo_publication)
     app.action("geo_production_approve")(production_review)
     app.action("geo_production_reject")(production_review)
     app.action("blog_approve")(review)

@@ -118,3 +118,30 @@ def test_disabled_publishing_never_consumes_approval(tmp_path, monkeypatch):
     assert not pub.run_once(s)
     assert not calls
     assert json.loads((tmp_path / "production-review.json").read_text())["state"] == "queued"
+
+
+def test_owner_auto_policy_publishes_without_fabricated_reviewer(tmp_path, monkeypatch):
+    from geo_blog.automatic_publication import POLICY
+    from geo_blog.publication_delivery import publication_path
+
+    s, _, calls = setup_run(tmp_path, monkeypatch)
+    s = s.model_copy(update={"production_auto_publish_enabled": True})
+    for name in ("production-review.json", "publication-plan.json"):
+        path = tmp_path / name
+        data = json.loads(path.read_text())
+        data["publication_policy"] = POLICY
+        data.pop("reviewer", None)
+        path.write_text(json.dumps(data))
+    payload = tmp_path / "draft" / "payload.json"
+    payload.write_text(
+        json.dumps(
+            {"preview_commit": "head", "front_matter": {"title": "Example", "slug": "example"}}
+        )
+    )
+    monkeypatch.setattr("geo_blog.publication_delivery.deliver_pending", Mock())
+    assert pub.run_once(s)
+    assert any(url.endswith("/merge") for url, _ in calls)
+    record = json.loads(publication_path(s, "draft").read_text())
+    assert record["state"] == "published" and record["notification_state"] == "pending"
+    assert "reviewer" not in record
+    pub.update_card.assert_not_called()

@@ -93,6 +93,8 @@ def test_correction_feedback_shows_passing_rules_so_they_are_not_broken(
     tmp_path, monkeypatch, valid_article
 ):
     """September 21, 2026: each attempt fixed one description rule and broke the other."""
+    # Exercise the correction loop itself; metadata options are tested separately.
+    monkeypatch.setattr("geo_blog.content.repair_metadata", lambda *a, **k: None)
     from geo_blog.content import Writer, parse_draft
 
     monkeypatch.setattr("geo_blog.content.primary_urls", lambda urls: urls)

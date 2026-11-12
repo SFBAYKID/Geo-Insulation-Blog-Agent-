@@ -114,7 +114,7 @@ def test_rejected_staged_draft_is_replaced_by_fresh_draft(tmp_path, env, monkeyp
     ready_draft(tmp_path, store, "old", status="rejected")
     (tmp_path / "weekly-next.json").write_text(json.dumps({"draft_id": "old"}))
 
-    def fresh(s, st, send):
+    def fresh(s, st, send, **kwargs):
         assert send is False
         ready_draft(tmp_path, st, "fresh")
         return "fresh"
@@ -268,7 +268,7 @@ def test_failure_is_reported_in_test_channel_never_production(tmp_path, env):
 
 def test_empty_week_is_reported_instead_of_silent(tmp_path, env, monkeypatch):
     settings, store, client, _ = env
-    monkeypatch.setattr("geo_blog.cli.run_daily", lambda s, st, send: None)
+    monkeypatch.setattr("geo_blog.cli.run_daily", lambda s, st, send, **kwargs: None)
     with pytest.raises(ValueError, match="No finished blog"):
         weekly.run_weekly(settings, store)
     client.chat_postMessage.assert_not_called()
@@ -290,3 +290,17 @@ def test_staging_pr_never_reaches_production_channel(tmp_path, env, monkeypatch)
     with pytest.raises(ValueError, match="Website PR"):
         weekly.share(settings, store, "wk1")
     client.chat_postMessage.assert_not_called()
+
+
+@pytest.mark.parametrize("status", ["ready", "pending", "approved"])
+def test_monday_reuses_draft_staged_early_without_spending(tmp_path, env, monkeypatch, status):
+    settings, store, client, _ = env
+    ready_draft(tmp_path, store, "early", status=status)
+    staged = json.dumps({"draft_id": "early", "staged_at": "2026-11-12T12:00:00Z"})
+    (tmp_path / "weekly-next.json").write_text(staged)
+    daily = Mock()
+    monkeypatch.setattr("geo_blog.cli.run_daily", daily)
+    assert weekly.stage_test(settings, store) == "early"
+    daily.assert_not_called()
+    client.chat_postMessage.assert_not_called()
+    assert (tmp_path / "weekly-next.json").read_text() == staged

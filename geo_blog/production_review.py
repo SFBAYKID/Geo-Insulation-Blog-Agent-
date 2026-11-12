@@ -44,6 +44,8 @@ def review_blocks(
 
 def handle_review(settings: Settings, body: dict[str, Any], raw_client: Any) -> bool:
     """Require the authorized user, channel, message and immutable commit before saving."""
+    if settings.production_auto_publish_enabled:
+        return False
     path = review_path(settings)
     if not settings.production_delivery_enabled or not settings.slack_production_channel_id:
         return False
@@ -107,6 +109,8 @@ def handle_review(settings: Settings, body: dict[str, Any], raw_client: Any) -> 
 
 def handle_comment(settings: Settings, event: dict[str, Any], raw_client: Any) -> bool:
     """Record explicitly mentioned reviewer comments only in the authorized blog thread."""
+    if settings.production_auto_publish_enabled:
+        return False
     path = review_path(settings)
     if not settings.production_delivery_enabled or not settings.slack_production_channel_id:
         return False

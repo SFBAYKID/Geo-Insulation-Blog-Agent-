@@ -10,7 +10,10 @@ Use typed Python interfaces, focused modules, module docstrings and useful publi
 
 All Slack tests use C0B02721MNK, monarch-bot-playground. Production channel and approvers must be independently configured. Every outbound Slack call uses slack_guard, including injected clients. Every sentence goes on its own line. Never invite, post or change production membership during setup. Production delivery remains disabled until the clean full test and production destination are verified.
 
-Only configured reviewers may request paid drafts or approve a version. Approval in the playground never publishes. Only production_publish.py may publish following a current exact-version approval; never bypass GitHub rules. Preserve ambiguous requests, sends and merges for reconciliation, not blind retries. The agent performs repairs and safe reservation recovery; Chase is not asked for manual fixes.
+Only configured reviewers may request paid drafts or use Undo publication.
+Chase reconfirmed on November 12, 2026: finished blogs publish automatically on Wednesday without waiting for Slack approval, followed by the verified live link and Undo publication button.
+Only production_publish.py may publish the exact checked version under the configured automatic-publication policy; never bypass GitHub rules.
+Playground approval and early staging never publish. Preserve ambiguous requests, sends and merges for reconciliation, not blind retries. The agent performs repairs and safe reservation recovery; Chase is not asked for manual fixes.
 
 Use only Geo company evidence, names, routes, imagery and runtime state. No other client's data, credentials or identities may enter this project. Account-level OAuth app reuse does not authorize copying another agent's runtime state. Never print or commit secrets; local credentials mode 0600.
 
@@ -24,6 +27,9 @@ Shared droplet writes are limited to geo-blog and geo-keyword-sync resources. Ne
 
 ## Current integration limits
 
-The live site is Astro according to verified Basecamp briefs. Inherited export/preview adapters are not yet verified against it. Do not enable website previews or production delivery until the website repo, staging/publishing flow and quality workflow are integrated and tested.
+The Geo Astro integration, exact-commit remote quality workflow and live publication are verified.
+Keep their structural, editorial, image, preview and live-verification gates enforced.
+Monday stages in the playground; Wednesday 09:00 America/Los_Angeles publishes automatically.
+The systemd weekly timer remains disabled because the geo-blog user cron owns scheduling.
 
 Chase authorized standalone local previews while website-repository and Vercel access are pending. Local preview rendering is independent of website_preview_enabled and never arms publication, posts to Slack or completes Basecamp tasks. Use live Geo styling, labeled illustrations, approved prose and verified asset hashes. Local review is not production approval.

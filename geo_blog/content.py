@@ -15,11 +15,19 @@ import yaml
 
 from .editor_notes import required_notes, rereview_request
 from .evidence import selected_packet, source_context
+from .metadata_options import generic_description_note, repair_metadata
 from .model_usage import cached_text, fingerprint, record_usage, stable_tools
 from .models import StructureCheck, StructureReport
 from .openai_client import make_client
 from .site_faq import extract_faq
-from .text_format import count_keyword_in_text
+from .text_format import count_keyword_in_text, same_phrase
+from .writer_feedback import (
+    DraftQualityError,
+    describe_check,
+    failed_checks,
+    secondary_required_in,
+    structure_feedback,
+)
 
 PROMPTS = Path(__file__).parent / "prompts"
 WRITER_ATTEMPTS = 7
@@ -147,7 +155,7 @@ def validate(
                 expected,
                 str(actual) if actual is not None else "pass" if passed else "fail",
                 bool(passed),
-                True,
+                not (key.startswith("secondary_") or key in {"keyword_h1", "repetition"}),
             )
         )
 
@@ -168,6 +176,9 @@ def validate(
             ("title", fm["title"]),
             ("description", fm["description"]),
         ]:
+            # A pair that cannot fit the field's limit is waived there (writer_feedback).
+            if not secondary_required_in(label, keyword, secondary_keyword):
+                continue
             check(
                 "secondary_" + label,
                 count_keyword_in_text(value, secondary_keyword) > 0,
@@ -211,7 +222,7 @@ def validate(
         )
     check(
         "keyword_metadata",
-        fm["keywords"][0].casefold() == keyword.casefold(),
+        same_phrase(str(fm["keywords"][0]), keyword),
         "Primary keyword first",
     )
     if secondary_keyword:
@@ -222,7 +233,7 @@ def validate(
         )
         check(
             "secondary_metadata",
-            secondary_keyword.casefold() in [k.casefold() for k in fm["keywords"][1:]],
+            any(same_phrase(str(k), secondary_keyword) for k in fm["keywords"][1:]),
             f'Include "{secondary_keyword}" in keywords metadata',
             fm["keywords"],
         )
@@ -615,6 +626,7 @@ class Writer:
         # The stricter Sonnet 5 editor needed more than five (September 28, 2026).
         # Notes from the last editor pass; later passes check these instead of starting over.
         prior_notes: list[str] = []
+        blockers: list[str] = []
         for attempt in range(WRITER_ATTEMPTS):
             repairing = False
             if text and self.s.writer_patch_corrections:
@@ -660,6 +672,9 @@ class Writer:
                     text = apply_edits(text, response_json(response)["edits"])
                 else:
                     text = response_text(response)
+                from .metadata_lengths import repair_heading
+
+                text = repair_heading(text, topic["keyword"])
                 problem = ""
                 fm, body, report = validate(
                     text,
@@ -687,14 +702,34 @@ class Writer:
                         "Include the selected product with a specific, factual connection and its verified URL: "
                         + json.dumps(product)
                     )
+                    blockers = ["Selected product link missing"]
                     continue
+                if not report.passed and (
+                    repaired := repair_metadata(
+                        self,
+                        validate,
+                        text,
+                        topic,
+                        urls,
+                        report.summary,
+                        context,
+                        output_dir,
+                        attempt,
+                    )
+                ):
+                    # Only title/description failed; a measured option passed every check.
+                    text, (fm, body, report) = repaired
+                    (output_dir / "latest-draft.md").write_text(text)
+                    validate_basecamp_draft(
+                        {"topic": topic, "front_matter": fm, "report": report.summary}
+                    )
                 if not report.passed:
+                    blockers = [describe_check(c) for c in failed_checks(report.summary)]
                     # Showing only the failures let each attempt break a rule the last one had
                     # just satisfied, so the description oscillated between its length and its
                     # required phrase (September 21, 2026). Send the whole scorecard.
-                    feedback = (
-                        "Fix every check marked failed without breaking any check marked passed.\n"
-                        + json.dumps(report.summary["checks"])
+                    feedback = structure_feedback(
+                        report.summary, fm, topic["keyword"], topic.get("secondary_keyword", "")
                     )
                     continue
                 verdict = editorial_review(
@@ -707,6 +742,9 @@ class Writer:
                     (output_dir / "draft.md").write_text(text)
                     draft = {
                         "front_matter": fm,
+                        "metadata_fallback_note": generic_description_note(
+                            output_dir, fm["description"]
+                        ),
                         "markdown": text,
                         "report": report.summary,
                         "sources": sorted(urls),
@@ -724,6 +762,7 @@ class Writer:
                     return draft
                 feedback = json.dumps(verdict)
                 prior_notes = [str(n) for n in verdict.get("notes", [])]
+                blockers = ["Editor: " + n[:200] for n in prior_notes] or ["Editor did not approve"]
             except (ValueError, TypeError, AttributeError, KeyError) as exc:
                 # The draft still needs the same corrections. Say only what was wrong with the
                 # reply itself, instead of replacing the findings with a mechanical error.
@@ -732,6 +771,8 @@ class Writer:
                     + str(exc)
                     + " Return corrected edits for the same findings above."
                 )
-        raise ValueError(
-            f"Draft failed quality review after {WRITER_ATTEMPTS} attempts; inspect saved artifacts"
-        )
+                # Keep the last real findings too; a broken reply does not erase them.
+                blockers = [b for b in blockers if not b.startswith("Reply could not")] + [
+                    "Reply could not be applied: " + str(exc)[:200]
+                ]
+        raise DraftQualityError(topic["keyword"], WRITER_ATTEMPTS, blockers)

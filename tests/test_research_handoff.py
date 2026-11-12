@@ -230,3 +230,176 @@ def test_api_rejects_research_field_and_coverage_writes(tmp_path):
         with pytest.raises(ValueError):
             api.request("PATCH", research_api.COVERAGE, "recA")
     assert not calls
+
+
+def test_impossible_primary_is_held_and_next_topic_selected(tmp_path, monkeypatch):
+    api = FakeAPI([row("recLong", priority=1, keyword="x" * 56), row("recNext", priority=2)])
+    wire(monkeypatch, api)
+    topic = research_queue.select_research(config(tmp_path), set(), hold_duplicates=True)
+    assert topic["id"] == "recNext"
+    assert api.writes[0][0] == "recLong"
+    assert api.writes[0][1]["Status"] == "Held"
+    assert "title" in api.writes[0][1]["Hold reason"]
+
+
+def test_impossible_primary_is_skipped_read_only_during_inspection(tmp_path, monkeypatch):
+    api = FakeAPI([row("recLong", priority=1, keyword="x" * 56), row("recNext", priority=2)])
+    wire(monkeypatch, api)
+    assert research_queue.select_research(config(tmp_path), set())["id"] == "recNext"
+    assert not api.writes
+
+
+def quality_failure(monkeypatch, tmp_path, store, api, exc=None):
+    """Run one draft that exhausts the writer, leaving the artifacts a real run leaves."""
+    from geo_blog.cli import run_daily
+    from geo_blog.content import WRITER_ATTEMPTS
+    from geo_blog.writer_feedback import DraftQualityError
+
+    def draft(topic, day, folder):
+        (folder / f"writer-{WRITER_ATTEMPTS - 1}.json").write_text("{}")
+        raise exc or DraftQualityError(topic["keyword"], WRITER_ATTEMPTS, ["h1 (Exactly one H1)"])
+
+    monkeypatch.setattr("geo_blog.content.Writer", lambda settings: Mock(draft=draft))
+    # A distinct run key per simulated week; the daily key would dedupe same-day runs.
+    with pytest.raises(Exception) as caught:
+        run_daily(config(tmp_path), store, request_key=f"week-{len(api.writes)}")
+    return caught.value
+
+
+def test_second_quality_failure_holds_topic_and_flags_alert(tmp_path, monkeypatch):
+    api = FakeAPI([row()])
+    wire(monkeypatch, api)
+    store = Store(tmp_path)
+    first = quality_failure(monkeypatch, tmp_path, store, api)
+    assert api.records["recA"]["fields"]["Status"] == "Proposed"
+    assert not hasattr(first, "topic_held")
+    second = quality_failure(monkeypatch, tmp_path, store, api)
+    fields = api.records["recA"]["fields"]
+    assert fields["Status"] == "Held"
+    assert "2 separate runs" in fields["Hold reason"]
+    assert "h1 (Exactly one H1)" in fields["Hold reason"]
+    assert "now Held" in second.topic_held
+    # Locally still requeued, so Chase can set it back to Proposed after editing.
+    assert "recA" not in store.used_topics()
+
+
+def test_outages_never_hold_a_topic(tmp_path, monkeypatch):
+    api = FakeAPI([row()])
+    wire(monkeypatch, api)
+    store = Store(tmp_path)
+    for _ in range(3):
+        quality_failure(monkeypatch, tmp_path, store, api, exc=ValueError("OpenAI timeout"))
+        assert api.records["recA"]["fields"]["Status"] == "Proposed"
+
+
+def test_edited_keywords_reset_the_failure_count(tmp_path, monkeypatch):
+    api = FakeAPI([row()])
+    wire(monkeypatch, api)
+    store = Store(tmp_path)
+    quality_failure(monkeypatch, tmp_path, store, api)
+    api.records["recA"]["fields"]["Supporting keywords"] = "attic airflow"
+    quality_failure(monkeypatch, tmp_path, store, api)
+    assert api.records["recA"]["fields"]["Status"] == "Proposed"
+
+
+def test_failures_from_before_the_fix_do_not_count(tmp_path, monkeypatch):
+    """A Nov 11 style failure folder (no marker) must not count as a first strike."""
+    api = FakeAPI([row()])
+    wire(monkeypatch, api)
+    store = Store(tmp_path)
+    old = tmp_path / "olddraft"
+    old.mkdir()
+    (old / "writer-6.json").write_text("{}")
+    (old / "topic.json").write_text(
+        '{"keyword": "attic comfort", "secondary_keyword": "home comfort"}'
+    )
+    with store.db() as db:
+        db.execute(
+            "INSERT INTO drafts(id,run_key,topic_key,status,error) VALUES('olddraft','daily:x','recA','failed_requeued','ValueError')"
+        )
+    quality_failure(monkeypatch, tmp_path, store, api)
+    assert api.records["recA"]["fields"]["Status"] == "Proposed"
+
+
+def test_held_topic_reproposed_unchanged_is_held_again_without_drafting(tmp_path, monkeypatch):
+    api = FakeAPI([row(), row("recNext", priority=200, keyword="attic airflow basics")])
+    wire(monkeypatch, api)
+    store = Store(tmp_path)
+    quality_failure(monkeypatch, tmp_path, store, api)
+    quality_failure(monkeypatch, tmp_path, store, api)
+    assert api.records["recA"]["fields"]["Status"] == "Held"
+    # The research agent's sync (or a person) sets it back to Proposed with no edits.
+    api.records["recA"]["fields"]["Status"] = "Proposed"
+    topic = research_queue.select_research(config(tmp_path), set(), hold_duplicates=True)
+    assert topic["id"] == "recNext"
+    assert api.records["recA"]["fields"]["Status"] == "Held"
+    assert "re-proposing it unchanged" in api.records["recA"]["fields"]["Hold reason"]
+    assert "h1 (Exactly one H1)" in api.records["recA"]["fields"]["Hold reason"]
+
+
+def test_edited_brief_releases_a_held_topic(tmp_path, monkeypatch):
+    api = FakeAPI([row()])
+    wire(monkeypatch, api)
+    store = Store(tmp_path)
+    quality_failure(monkeypatch, tmp_path, store, api)
+    quality_failure(monkeypatch, tmp_path, store, api)
+    fields = api.records["recA"]["fields"]
+    fields.update({"Status": "Proposed", "Angle": "Focus on measured attic airflow."})
+    topic = research_queue.select_research(config(tmp_path), set(), hold_duplicates=True)
+    assert topic["id"] == "recA"
+
+
+def test_impossible_basecamp_task_is_skipped_and_reported(tmp_path, monkeypatch):
+    from geo_blog import cli
+
+    settings = config(tmp_path).model_copy(update={"blog_queue_source": "basecamp"})
+    bad = {"id": "basecamp:1", "keyword": "x" * 60}
+    good = {"id": "basecamp:2", "keyword": "attic comfort"}
+    monkeypatch.setattr(
+        cli, "select_topic", lambda s, used: bad if "basecamp:1" not in used else good
+    )
+    alerts = []
+    monkeypatch.setattr("geo_blog.weekly.private_alert", lambda s, text: alerts.append(text))
+    monkeypatch.setattr(cli.Store, "reserve", lambda *args: False)  # stop before drafting
+    assert cli.run_daily(settings, Store(tmp_path)) is None
+    assert "basecamp:1" in alerts[0] and "title" in alerts[0]
+
+
+def test_direct_request_with_impossible_keyword_is_refused(tmp_path):
+    from geo_blog import cli
+
+    settings = config(tmp_path).model_copy(update={"blog_queue_source": "basecamp"})
+    with pytest.raises(ValueError, match="website limits"):
+        cli.run_daily(settings, Store(tmp_path), topic={"id": "req", "keyword": "x" * 60})
+
+
+def test_weekly_fallback_preserves_strikes_and_skips_requeued_topics(tmp_path, monkeypatch):
+    from geo_blog.cli import run_daily
+    from geo_blog.quality_failures import failure_count
+    from geo_blog.weekly_attempts import draft_with_fallback
+    from geo_blog.writer_feedback import DraftQualityError
+
+    api = FakeAPI(
+        [
+            row("recA", priority=1, keyword="attic comfort"),
+            row("recB", priority=2, keyword="wall insulation"),
+            row("recC", priority=3, keyword="garage insulation"),
+        ]
+    )
+    wire(monkeypatch, api)
+    seen = []
+
+    def draft(topic, day, folder):
+        seen.append(topic["id"])
+        raise DraftQualityError(topic["keyword"], 7, ["depth"])
+
+    monkeypatch.setattr("geo_blog.content.Writer", lambda settings: Mock(draft=draft))
+    monkeypatch.setattr("geo_blog.weekly.private_alert", Mock())
+    settings = config(tmp_path)
+    with pytest.raises(DraftQualityError):
+        draft_with_fallback(settings, Store(tmp_path), run_daily)
+    assert seen == ["recA", "recB", "recC"]
+    for record_id in seen:
+        fields = api.records[record_id]["fields"]
+        assert fields["Status"] == "Proposed"
+        assert failure_count(settings, record_id, fields) == 1

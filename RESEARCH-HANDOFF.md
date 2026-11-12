@@ -29,7 +29,8 @@ Basecamp fallback must not bypass Held or already-owned research topics.
 
 Before claiming, reread the source and verify it is unchanged and still Proposed.
 Persist claim intent, set Claimed with a UTC timestamp, verify it, then proceed through Drafting and Review.
-After exact-version production approval and verified live publication, set Published, Published URL and Published date.
+After the scheduled automatic publication of the exact checked version and verified live publication, set Published, Published URL and Published date.
+Chase reconfirmed on November 12, 2026 that no Slack publication approval is required.
 A production rejection records Rejected with reviewer context in Review notes.
 Confirmed draft failure returns the owned row to Proposed, retains the failure receipt and releases its source reservation for a later run.
 Ambiguous writes, concurrent human changes or lost ownership require reconciliation rather than blind retries.

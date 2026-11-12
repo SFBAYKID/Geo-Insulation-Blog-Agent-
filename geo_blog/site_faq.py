@@ -32,12 +32,15 @@ def extract_faq(body: str) -> tuple[str, list[Faq]]:
     for i, match in enumerate(questions):
         stop = questions[i + 1].start() if i + 1 < len(questions) else len(source)
         answer = source[match.end() : stop].strip()
+        question = match[1] or match[2]
         # The site contract is plain text: never silently strip links, lists or markup.
         if not answer or re.search(r"[*\[\]<>`#]|^\s*(?:- |\d+\. )", answer, re.M):
             raise ValueError(
-                "FAQ answers must be nonempty plain text; keep citations in body prose"
+                "FAQ answers must be nonempty plain text; keep citations in body prose. "
+                f"Check the answer to: {question}. "
+                "If a closing paragraph or service link follows the last answer, put "
+                "## Next steps on its own line before that paragraph to end the FAQ section."
             )
-        question = match[1] or match[2]
         if any(faq["question"].casefold() == question.casefold() for faq in faqs):
             raise ValueError("Duplicate FAQ question")
         faqs.append({"question": question, "answer": " ".join(answer.split())})

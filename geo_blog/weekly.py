@@ -17,7 +17,7 @@ from .settings import Settings
 from .store import Store
 
 CHASE = "U01DPJVURHU"
-CLOSED_REVIEW_STATES = {"published", "rejected"}
+CLOSED_REVIEW_STATES = {"published", "rejected", "unpublished"}
 REUSABLE_DRAFT_STATES = {"ready", "pending", "approved"}
 
 
@@ -27,13 +27,31 @@ def staged_path(settings: Settings) -> Path:
 
 
 def stage_test(settings: Settings, store: Store) -> str | None:
+    """Serialize staging with production; report any failure only to the owner."""
+    with (settings.storage_dir / "weekly.lock").open("a") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return None
+        try:
+            return _stage_test(settings, store)
+        except Exception as exc:
+            private_alert(
+                settings,
+                f"Monday draft staging failed ({type(exc).__name__}). Inspect the saved run before retrying.",
+            )
+            raise
+
+
+def _stage_test(settings: Settings, store: Store) -> str | None:
     """Write the next blog and deliver it only in the test channel for owner review."""
     path = staged_path(settings)
     if path.exists():
         staged = json.loads(path.read_text())
         row = store.get(staged["draft_id"])
         if row and row["status"] in REUSABLE_DRAFT_STATES:
-            raise ValueError(f"Draft {staged['draft_id']} is already staged for Wednesday")
+            logging.info("Reusing draft %s already staged for Wednesday", staged["draft_id"])
+            return str(staged["draft_id"])
     from .cli import run_daily
 
     # the reviewer's Basecamp notice waits for the real production share.
@@ -81,13 +99,13 @@ def run_weekly(settings: Settings, store: Store) -> str | None:
                 draft_id = candidate
         if not draft_id:
             from .cli import run_daily
+            from .weekly_attempts import draft_with_fallback
 
-            draft_id = run_daily(settings, store, send=False)
+            draft_id = draft_with_fallback(settings, store, run_daily)
         if not draft_id:
-            # Empty queue, or today's reservation already used by a failed attempt.
+            # No eligible topic remains after any failed attempts.
             raise ValueError(
-                "No finished blog was produced: the Basecamp queue is empty or today's "
-                "draft reservation was already used; check the service log"
+                "No finished blog was produced: no eligible topic remains; check the service log"
             )
         share(settings, store, draft_id)
         return str(draft_id)
@@ -158,6 +176,18 @@ def share(settings: Settings, store: Store, draft_id: str) -> dict[str, Any]:
         # The publisher merges only non-draft PRs; readiness is the owner's weekly consent.
         command(["gh", "pr", "ready", str(pr_number)], checkout)
     base_sha = api(checkout, f"repos/{REPOSITORY}/git/ref/heads/main")["object"]["sha"]
+    from .weekly_attempts import report_soft_findings
+
+    report_soft_findings(settings, draft)
+    if settings.production_auto_publish_enabled:
+        from .automatic_publication import arm
+
+        receipt = arm(settings, draft_id, commit, base_sha, pr_number)
+        receipt_path.write_text(json.dumps(receipt, indent=2))
+        staged = staged_path(settings)
+        if staged.exists() and json.loads(staged.read_text()).get("draft_id") == draft_id:
+            staged.unlink()
+        return receipt
     if settings.basecamp_draft_ready_enabled:
         try:
             from .basecamp_review import draft_ready
@@ -228,12 +258,23 @@ def notify_failure(settings: Settings, exc: BaseException) -> None:
     Owner preference (September 28, 2026): a fixed run posted late beats a visible
     failure in production.
     """
-    detail = (type(exc).__name__ + ": " + str(exc))[:300]
+    from .writer_feedback import DraftQualityError
+
+    if isinstance(exc, DraftQualityError):
+        # List only the checks that failed; the full scorecard hid them (November 11, 2026).
+        detail = (
+            f'"{exc.keyword}" failed quality review after {exc.attempts} attempts.\n'
+            "Still failing:\n" + "\n".join("• " + b for b in exc.blockers[:8])
+        )[:1500]
+    else:
+        detail = (type(exc).__name__ + ": " + str(exc))[:600]
+    held = str(getattr(exc, "topic_held", ""))
     private_alert(
         settings,
         "This week's blog did not go out. Nothing was posted in the client's channel.\n"
         f"Reason: {detail}\n"
-        "Ask the blog agent to fix it and rerun this week's blog.",
+        + (held + "\n" if held else "")
+        + "Ask the blog agent to fix it and rerun this week's blog.",
     )
 
 

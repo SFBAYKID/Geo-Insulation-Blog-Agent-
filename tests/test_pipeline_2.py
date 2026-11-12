@@ -466,7 +466,7 @@ def test_a_rejected_patch_keeps_the_findings_it_was_meant_to_fix(
     )
     # A draft missing its secondary keyword, then a patch whose old text is not in it.
     writer.call = Mock(
-        side_effect=[message(valid_article)]
+        side_effect=[message(valid_article.replace("## Check", "# Check"))]
         + [message('{"edits":[{"old":"absent text","new":"x"}]}')] * (WRITER_ATTEMPTS - 1)
     )
     urls = {
@@ -487,5 +487,5 @@ def test_a_rejected_patch_keeps_the_findings_it_was_meant_to_fix(
             urls,
         )
     sent = writer.call.call_args_list[2].args[1]
-    assert "secondary_keyword" in sent, "the structural findings must survive a rejected patch"
+    assert "h1" in sent, "the structural findings must survive a rejected patch"
     assert "could not be applied" in sent, "and the reply problem must be named too"
