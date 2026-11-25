@@ -121,12 +121,28 @@ def wait_production(checkout: Path, sha: str) -> None:
     raise TimeoutError("Production deployment remains pending")
 
 
+LIVE_CHECK_ATTEMPTS = 30
+LIVE_CHECK_INTERVAL = 20
+
+
 def verify_live(plan: dict[str, Any], draft: dict[str, Any], checkout: Path, sha: str) -> str:
-    """Check the live Astro article against approved prose and immutable imagery."""
+    """Check the live Astro article against approved prose and immutable imagery.
+
+    A successful Vercel deployment can briefly precede the new page being served
+    (a 404 or the previous sitemap), so the full check repeats for about ten
+    minutes. Only a page that still fails after that stops for inspection.
+    """
     from .live_verification import verify_article
 
     with httpx.Client(timeout=45, follow_redirects=False, trust_env=False) as client:
-        return verify_article(draft, client)
+        for attempt in range(LIVE_CHECK_ATTEMPTS):
+            try:
+                return verify_article(draft, client)
+            except (ValueError, httpx.HTTPError):
+                if attempt == LIVE_CHECK_ATTEMPTS - 1:
+                    raise
+                time.sleep(LIVE_CHECK_INTERVAL)
+    raise AssertionError("unreachable")
 
 
 def record_basecamp(settings: Settings, draft: dict[str, Any], url: str) -> None:
