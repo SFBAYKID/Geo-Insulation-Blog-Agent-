@@ -145,3 +145,28 @@ def test_owner_auto_policy_publishes_without_fabricated_reviewer(tmp_path, monke
     assert record["state"] == "published" and record["notification_state"] == "pending"
     assert "reviewer" not in record
     pub.update_card.assert_not_called()
+
+
+def test_verify_live_waits_for_page_served_after_deployment(monkeypatch):
+    """A 404 right after a successful deploy is retried, not reported as a failure."""
+    outcomes = [ValueError("Live article URL did not return the expected page")] * 2
+    verify = Mock(side_effect=[*outcomes, "https://geo-insulation.com/blog/example/"])
+    monkeypatch.setattr("geo_blog.live_verification.verify_article", verify)
+    sleep = Mock()
+    monkeypatch.setattr(pub.time, "sleep", sleep)
+
+    url = pub.verify_live({}, {}, None, "sha")
+
+    assert url == "https://geo-insulation.com/blog/example/"
+    assert verify.call_count == 3
+    assert sleep.call_count == 2
+
+
+def test_verify_live_stops_after_bounded_attempts(monkeypatch):
+    verify = Mock(side_effect=ValueError("Live article metadata differs from the reviewed version"))
+    monkeypatch.setattr("geo_blog.live_verification.verify_article", verify)
+    monkeypatch.setattr(pub.time, "sleep", Mock())
+
+    with pytest.raises(ValueError, match="metadata differs"):
+        pub.verify_live({}, {}, None, "sha")
+    assert verify.call_count == pub.LIVE_CHECK_ATTEMPTS

@@ -1,7 +1,7 @@
 # Geo Insulation blog agent setup
 
-Updated October 6, 2026.
-Weekly production review scheduling is enabled for Wednesday 09:00 America/Los_Angeles in C0BP597644B.
+Updated October 15, 2026.
+Weekly production review scheduling is enabled for Wednesday 09:00 America/Los_Angeles in C0C9NUA9BG9.
 The dedicated Geo listener, Basecamp authorization and GitHub token are active on the droplet.
 The illustrated playground test and Chase's real approval passed.
 Website foundation PR #87 is deployed; new articles still require their own exact-version production Slack approval.
@@ -298,6 +298,36 @@ Chase added channels:history and groups:history with message.channels and messag
 Chase also asked for a blank line after each sentence in every Slack message; sentence_lines now adds it while keeping quotes and list items tight.
 
 
+## Dedicated production channel move, October 15
+
+Chase authorized moving the agent from C0BP597644B to C0C9NUA9BG9.
+Verified the dedicated Geo bot can read the new channel using its existing history scope.
+Changed only SLACK_PRODUCTION_CHANNEL_ID in the private live runtime configuration, preserving a mode-0600 backup.
+Restarted only the Geo listener through its existing service restart policy.
+Verified the active replacement process loaded C0C9NUA9BG9, with production delivery and production chat still enabled and the playground unchanged.
+No Slack message, membership change, paid draft or publication was triggered.
+Local verification passed: 363 tests, Ruff lint and formatting, mypy and tools.check_project.
+
+
+## Research queue integration activated, October 31, 2026
+
+Chase authorized steps 1–3 and created a dedicated Geo-only record read/write token.
+Installed and pushed agent commit bf43482; no research-agent credentials were reused.
+Blog Posts tbll5xV6zwbZSMSjR is the first queue; Existing Coverage tbl0Yxt6Dz8nXPsEH is read-only.
+Only Proposed rows may be claimed; possible duplicate intent is Held for human review.
+Basecamp list 10378779880 remains the fallback after successful research reads.
+Local and exact-release server verification passed: 382 tests; local Ruff lint/format, mypy and project checks passed; server project checks passed.
+Dedicated token access verified: Blog Posts has 0 rows; Existing Coverage has 52.
+The live disposable-row test passed Proposed → Claimed → Rejected → deletion, with identical original-record hashes.
+Runtime configuration backed up privately and only the Geo listener restarted through its existing restart policy.
+Read-back verified active PID 86258 with research queue mode, lifecycle writes and threshold-2 monitoring, and the dedicated token matched the private configuration.
+Production scheduler readiness reports no missing configuration; Wednesday 9 AM Pacific cron and exact-version publication approval remain unchanged.
+The first empty-queue alert was delivered to Chase in C0B02721MNK, message 1793478622.685519.
+No paid research, paid article generation, production review message or publication occurred.
+The full server selector returned no topic: there are no approved research topics or direct Basecamp requests.
+The first real article awaits a researched topic approved by Chase.
+
+
 ## Reliability follow-up verified — November 12, 2026
 
 SSH access recovered in this session.
@@ -343,3 +373,19 @@ The listener is active, Wednesday cron is unchanged, and the systemd weekly time
 The existing cellulose article's per-publication receipt is published with notification_state=sent, and its card builder includes geo_publication_undo.
 Next week's draft f3e7459416484576 remains in weekly-next.json; no early publication was triggered.
 Updated the isolated checkout's policy and operational documentation to reflect this decision, preserving the original checkout's uncommitted work.
+
+
+## Wednesday publication recovered after a one-shot live check — November 25, 2026
+
+The 09:00 Pacific run published staged draft 2db9fb5be7124741, “Wet Attic Insulation: Wet Insulation After Roof Leak”.
+PR #137 merged as c54879d309337b2dfab63f0c3bec0c0bfbe22000 and Vercel reported Production success.
+The single live check at 17:01:02 UTC received HTTP 404, raised ValueError and set publication_needs_inspection; the page was live shortly after.
+That state would have blocked the December 2 weekly run.
+Rerunning verify_article read-only against the live page passed every check.
+Commit 78101c4 makes verify_live repeat the full check every 20 seconds for up to 30 attempts; two regressions cover the retry and the bounded failure.
+Installed only geo_blog/production_publish.py and its test file after hash-matching the server copies; originals are in /var/lib/geo-blog/backups/retry-live-check-20261125.
+All 460 server tests passed; only the Geo listener was restarted through its restart policy (new PID 129058, Slack connected).
+With Chase's approval, the review was resumed at its recorded merged state after backing up production-review.json; no merge was replayed.
+The worker verified the live article, marked the draft published, updated Airtable record reclNlG5xFXPC4IdS and sent the announcement (message 1795644904.416519).
+Basecamp completion was skipped because this research-queue topic has no Basecamp task.
+The research queue had one approved topic left at the time of the run.
